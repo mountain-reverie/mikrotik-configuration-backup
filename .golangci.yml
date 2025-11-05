@@ -1,0 +1,252 @@
+# golangci-lint configuration for v2
+# Reference: https://golangci-lint.run/docs/configuration/file/
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  build-tags:
+    - integration
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
+      colors: true
+  sort-order:
+    - linter
+    - severity
+    - file
+
+formatters:
+  enable:
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/mountain-reverie/mikrotik-configuation-backup
+
+linters:
+  enable:
+    # Default linters
+    - errcheck      # Check for unchecked errors
+    - govet         # Reports suspicious constructs
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Go static analysis
+    - unused        # Check for unused constants, variables, functions and types
+
+    # Additional recommended linters
+    - asasalint     # Check for pass []any as any in variadic func
+    - asciicheck    # Check for non-ASCII identifiers
+    - bidichk       # Check for dangerous unicode character sequences
+    - bodyclose     # Check HTTP response body is closed
+    - copyloopvar   # Detects places where loop variables are copied
+    - cyclop        # Check function and package cyclomatic complexity
+    - dupl          # Code clone detection
+    - durationcheck # Check for two durations multiplied together
+    - errname       # Check error naming conventions
+    - errorlint     # Find code that will cause problems with error wrapping
+    - exhaustive    # Check exhaustiveness of enum switch statements
+    - forbidigo     # Forbid specific identifiers
+    - funlen        # Detect long functions
+    - gochecknoglobals # Check that no global variables exist
+    - gochecknoinits   # Check that no init functions are present
+    - gocognit      # Compute and check cognitive complexity
+    - goconst       # Find repeated strings that could be constants
+    - gocritic      # Comprehensive Go source code linter
+    - gocyclo       # Compute cyclomatic complexity
+    - godot         # Check if comments end in period
+    - gomoddirectives # Manage replace, retract directives in go.mod
+    - goprintffuncname # Check printf-like functions are named correctly
+    - gosec         # Security problems
+    - intrange      # Find places where range can be simplified
+    - loggercheck   # Check key-value pairs for common logger libraries
+    - makezero      # Find slice declarations with non-zero initial length
+    - mirror        # Reports wrong mirror patterns of bytes/strings
+    - mnd           # Detect magic numbers
+    - nakedret      # Find naked returns in functions
+    - nestif        # Report deeply nested if statements
+    - nilerr        # Find code returning nil even if it checks err is not nil
+    - nilnil        # Check for simultaneous return of nil error and invalid value
+    - noctx         # Find sending HTTP request without context.Context
+    - nolintlint    # Report ill-formed or insufficient nolint directives
+    - nonamedreturns # Report all named returns
+    - nosprintfhostport # Check for sprintf with net host:port
+    - perfsprint    # Checks for performance issues with fmt.Sprintf
+    - predeclared   # Find code that shadows predeclared identifiers
+    - promlinter    # Check Prometheus metrics naming
+    - reassign      # Check that package variables are not reassigned
+    - revive        # Fast, configurable, extensible, flexible, and beautiful linter
+    - sloglint      # Ensure consistent usage of slog
+    - spancheck     # Check for mistakes with OpenTelemetry spans
+    - sqlclosecheck # Check sql.Rows and sql.Stmt are closed
+    - testableexamples # Check if examples are testable
+    - testpackage   # Require separate _test package
+    - tparallel     # Detect inappropriate usage of t.Parallel()
+    - unconvert     # Remove unnecessary type conversions
+    - unparam       # Report unused function parameters
+    - usestdlibvars # Detect the possibility to use variables/constants from stdlib
+    - wastedassign  # Find wasted assignment statements
+    - whitespace    # Detection of leading and trailing whitespace
+
+  disable:
+    - depguard      # Depends on specific project needs
+    - exhaustruct   # Too strict for most projects
+    - gochecksumtype # Only useful for sum types
+    - godox         # Detects TODO/FIXME comments (can be annoying)
+    - paralleltest  # Forces t.Parallel() (not always desired)
+    - testifylint   # Only useful if using testify
+    - varnamelen    # Too opinionated on variable name length
+    - wsl           # Too opinionated on whitespace
+    - wrapcheck     # Too strict for internal packages
+
+linters-settings:
+  cyclop:
+    max-complexity: 15
+    skip-tests: true
+
+  dupl:
+    threshold: 100
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (io.Closer).Close
+      - (*database/sql.Rows).Close
+
+  errorlint:
+    errorf: true
+    asserts: true
+    comparison: true
+
+  exhaustive:
+    default-signifies-exhaustive: true
+
+  forbidigo:
+    forbid:
+      - ^print.*$
+      - 'fmt\.Print.*'
+    exclude-godoc-examples: true
+
+  funlen:
+    lines: 100
+    statements: 50
+    ignore-comments: true
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+    ignore-tests: true
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - whyNoLint
+      - unnamedResult
+
+  gocyclo:
+    min-complexity: 15
+
+  godot:
+    scope: declarations
+    capital: true
+
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - shadow
+
+  mnd:
+    ignored-functions:
+      - '^math\.'
+      - '^http\.StatusText$'
+    ignored-numbers:
+      - '0'
+      - '1'
+      - '2'
+      - '100'
+      - '404'
+      - '500'
+
+  nakedret:
+    max-func-lines: 30
+
+  nestif:
+    min-complexity: 4
+
+  nolintlint:
+    allow-unused: false
+    require-explanation: true
+    require-specific: true
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  staticcheck:
+    checks:
+      - all
+
+  unparam:
+    check-exported: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - dupl
+        - funlen
+        - gochecknoglobals
+        - goconst
+        - mnd
+        - wrapcheck
+
+    # Exclude magic number detection in test files
+    - path: _test\.go
+      text: "mnd: Magic number"
+
+  exclude-use-default: false
+  exclude-case-sensitive: false
+
+severity:
+  default: error
+  case-sensitive: false
