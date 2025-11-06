@@ -394,13 +394,14 @@ This project uses comprehensive GitHub Actions workflows for automation. All wor
 
 ### Overview
 
-The project includes 5 main workflows:
+The project includes 6 main workflows:
 
-1. **CI Workflow** (`ci.yml`) - Reusable workflow for linting, testing, building, and security scanning
-2. **Main Branch** (`main.yml`) - Auto-tags releases and deploys GitHub Pages on main branch pushes
-3. **Pull Requests** (`pr.yml`) - Runs CI, coverage diff, Dependabot auto-merge, and Claude auto-fix
-4. **Release** (`release.yml`) - Creates signed releases with GoReleaser when tags are pushed
-5. **GitHub Pages** (`pages.yml`) - Builds and deploys documentation, coverage, and benchmarks
+1. **Go Version Update** (`go-version-update.yml`) - Monthly check for new Go releases, creates PR to update go.mod
+2. **CI Workflow** (`ci.yml`) - Reusable workflow for linting, testing, building, and security scanning
+3. **Main Branch** (`main.yml`) - Auto-tags releases and deploys GitHub Pages on main branch pushes
+4. **Pull Requests** (`pr.yml`) - Runs CI, coverage diff, Dependabot auto-merge, and Claude auto-fix
+5. **Release** (`release.yml`) - Creates signed releases with GoReleaser when tags are pushed
+6. **GitHub Pages** (`pages.yml`) - Builds and deploys documentation, coverage, and benchmarks
 
 ### Key Features
 
@@ -411,6 +412,7 @@ The project includes 5 main workflows:
 - **Coverage Reports**: Self-hosted on GitHub Pages with interactive dashboards
 - **Auto-tagging**: Automatic semantic versioning on main branch
 - **Dependabot Integration**: Auto-merge safe updates, Claude auto-fix for failures
+- **Go Version Updates**: Monthly automated checks for new Go releases
 
 ### For Contributors
 

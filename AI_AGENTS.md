@@ -116,6 +116,7 @@ This document provides comprehensive guidance for AI agents (like Claude Code, G
 - **Policy:** This project always uses the latest stable Go version
 - **Check:** See `go.mod` for current version
 - **CI Testing:** Tests run on both `stable` and `oldstable` Go releases
+- **Auto-Update:** Monthly workflow checks for new Go releases and creates PRs automatically
 - **Style Guide:** [Effective Go](https://go.dev/doc/effective_go) + [Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - **Formatting:** gofumpt (stricter than gofmt)
 
@@ -452,6 +453,7 @@ func TestBackupIntegration(t *testing.T) {
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
+| `go-version-update.yml` | Monthly (1st) or manual | Check & update Go version |
 | `ci.yml` | Reusable (called by others) | Lint, test, build, security |
 | `main.yml` | Push to `main` | Auto-tag, release, deploy pages |
 | `pr.yml` | Pull requests | CI, coverage diff, Dependabot |

@@ -4,7 +4,33 @@ This directory contains the GitHub Actions workflows for the mikrotik-configurat
 
 ## Workflows Overview
 
-### 1. CI Workflow (`ci.yml`)
+### 1. Go Version Update (`go-version-update.yml`)
+
+**Trigger:** Monthly schedule (1st of every month at 9:00 AM UTC) or manual dispatch
+
+**Purpose:** Automatically check for new Go releases and update go.mod
+
+**How it works:**
+1. Fetches latest stable Go releases from official API (`https://go.dev/dl/?mode=json`)
+2. Sorts versions numerically to find the actual latest version
+3. Compares with current version in `go.mod`
+4. If newer version available:
+   - Updates `go.mod` with new Go version
+   - Runs `go mod tidy` to update dependencies
+   - Creates a pull request with detailed information
+   - Labels PR as `dependencies`, `go`, `automated`
+   - Assigns to repository owner
+
+**Features:**
+- Filters only stable releases (skips beta/RC versions)
+- Proper semantic version sorting (handles 1.25.10 > 1.25.9 correctly)
+- Comprehensive PR description with release notes links
+- Automatic CI validation on the PR
+- Can be manually triggered via workflow_dispatch
+
+**Note:** The PR must be manually reviewed and merged. This ensures you can review release notes and verify compatibility before updating.
+
+### 2. CI Workflow (`ci.yml`)
 
 **Trigger:** Reusable workflow, called by other workflows
 
@@ -25,7 +51,7 @@ This directory contains the GitHub Actions workflows for the mikrotik-configurat
 - **CodeQL**: Performs CodeQL security analysis
 - **Dependency Review**: Reviews dependencies for vulnerabilities (PR only)
 
-### 2. Main Branch Workflow (`main.yml`)
+### 3. Main Branch Workflow (`main.yml`)
 
 **Trigger:** Push to `main` branch
 
@@ -38,7 +64,7 @@ This directory contains the GitHub Actions workflows for the mikrotik-configurat
   - Generates changelog from commits since last tag
   - Creates and pushes new tag (which automatically triggers the release workflow)
 
-### 3. Pull Request Workflow (`pr.yml`)
+### 4. Pull Request Workflow (`pr.yml`)
 
 **Trigger:** Pull requests to `main` or `develop`
 
@@ -58,7 +84,7 @@ This directory contains the GitHub Actions workflows for the mikrotik-configurat
   - Commits fixes if found
   - Prevents infinite loops with attempt tracking
 
-### 4. Release Workflow (`release.yml`)
+### 5. Release Workflow (`release.yml`)
 
 **Trigger:** Push of version tags (`v*`)
 
@@ -86,7 +112,7 @@ This directory contains the GitHub Actions workflows for the mikrotik-configurat
   - SBOM files (.sbom.json)
 - Uploads release assets as artifacts
 
-### 5. GitHub Pages Workflow (`pages.yml`)
+### 6. GitHub Pages Workflow (`pages.yml`)
 
 **Trigger:** workflow_call (called by main.yml and pr.yml)
 

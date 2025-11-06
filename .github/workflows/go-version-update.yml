@@ -1,0 +1,200 @@
+name: Update Go Version
+
+on:
+  schedule:
+    # Run on the 1st of every month at 9:00 AM UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-go-version:
+    name: Check and Update Go Version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest stable Go version
+        id: go_version
+        run: |
+          # Fetch all Go releases from official API
+          echo "Fetching Go releases from go.dev/dl/?mode=json..."
+          releases=$(curl -s 'https://go.dev/dl/?mode=json')
+
+          # Extract stable versions only and sort them
+          # Filter for stable releases, extract version field, sort by version number
+          latest_version=$(echo "$releases" | jq -r '[.[] | select(.stable == true) | .version] | sort_by(split(".") | map(tonumber)) | reverse | .[0]')
+
+          if [ -z "$latest_version" ]; then
+            echo "Error: Could not fetch latest Go version"
+            exit 1
+          fi
+
+          # Remove 'go' prefix to get just the version number (e.g., go1.25.3 -> 1.25.3)
+          version_number="${latest_version#go}"
+
+          echo "Latest stable Go version: $version_number"
+          echo "version=$version_number" >> $GITHUB_OUTPUT
+          echo "full_version=$latest_version" >> $GITHUB_OUTPUT
+
+      - name: Get current Go version from go.mod
+        id: current_version
+        run: |
+          current_version=$(grep '^go ' go.mod | awk '{print $2}')
+          echo "Current Go version in go.mod: $current_version"
+          echo "version=$current_version" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        id: compare
+        run: |
+          latest="${{ steps.go_version.outputs.version }}"
+          current="${{ steps.current_version.outputs.version }}"
+
+          echo "Comparing versions:"
+          echo "  Latest:  $latest"
+          echo "  Current: $current"
+
+          if [ "$latest" = "$current" ]; then
+            echo "Go version is already up to date!"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          else
+            echo "New Go version available: $latest (current: $current)"
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Go
+        if: steps.compare.outputs.needs_update == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.go_version.outputs.version }}
+
+      - name: Update go.mod
+        if: steps.compare.outputs.needs_update == 'true'
+        run: |
+          latest="${{ steps.go_version.outputs.version }}"
+          echo "Updating go.mod to Go $latest..."
+
+          # Update the go directive in go.mod
+          sed -i "s/^go .*/go $latest/" go.mod
+
+          # Run go mod tidy to ensure go.sum is updated
+          go mod tidy
+
+          echo "go.mod updated successfully"
+          cat go.mod
+
+      - name: Create Pull Request
+        if: steps.compare.outputs.needs_update == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update Go version to ${{ steps.go_version.outputs.version }}
+
+            Automated update to the latest stable Go release.
+
+            - Previous version: ${{ steps.current_version.outputs.version }}
+            - New version: ${{ steps.go_version.outputs.version }}
+
+            Changes:
+            - Updated go.mod to use Go ${{ steps.go_version.outputs.version }}
+            - Ran go mod tidy to update dependencies
+
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+            Co-Authored-By: Claude <noreply@anthropic.com>
+          branch: automated/go-version-${{ steps.go_version.outputs.version }}
+          delete-branch: true
+          title: 'chore: update Go to ${{ steps.go_version.outputs.version }}'
+          body: |
+            ## 🔄 Automated Go Version Update
+
+            This PR updates the Go version to the latest stable release.
+
+            ### Changes
+
+            - **Previous version:** `${{ steps.current_version.outputs.version }}`
+            - **New version:** `${{ steps.go_version.outputs.version }}`
+
+            ### What was updated
+
+            - ✅ `go.mod` - Updated go directive
+            - ✅ `go.sum` - Regenerated with `go mod tidy`
+
+            ### Release Information
+
+            - **Full version:** `${{ steps.go_version.outputs.full_version }}`
+            - **Release notes:** https://go.dev/doc/devel/release#${{ steps.go_version.outputs.full_version }}
+            - **Download page:** https://go.dev/dl/#${{ steps.go_version.outputs.full_version }}
+
+            ### Verification
+
+            The CI workflow will automatically:
+            - ✅ Run linting with golangci-lint
+            - ✅ Run unit tests on the new Go version
+            - ✅ Run integration tests
+            - ✅ Build binaries for all platforms
+            - ✅ Run security scans
+
+            ### Manual Testing
+
+            To test locally:
+            ```bash
+            # Update your Go installation
+            go install golang.org/dl/${{ steps.go_version.outputs.full_version }}@latest
+            ${{ steps.go_version.outputs.full_version }} download
+
+            # Or update using your package manager
+            # brew upgrade go
+            # or download from https://go.dev/dl/
+
+            # Pull this branch
+            git fetch origin automated/go-version-${{ steps.go_version.outputs.version }}
+            git checkout automated/go-version-${{ steps.go_version.outputs.version }}
+
+            # Test
+            go test -v -race ./...
+            golangci-lint run
+            go build ./cmd/mikrotik-backup
+            ```
+
+            ### Merge Checklist
+
+            - [ ] CI passes on the new Go version
+            - [ ] All tests pass
+            - [ ] No new linting errors
+            - [ ] Builds successfully on all platforms
+
+            ---
+
+            🤖 This PR was automatically created by the **Update Go Version** workflow.
+
+            Triggered by: Monthly schedule (1st of every month) or manual dispatch
+          labels: |
+            dependencies
+            go
+            automated
+          assignees: |
+            ${{ github.repository_owner }}
+
+      - name: Summary
+        run: |
+          echo "## Go Version Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Current version:** ${{ steps.current_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Latest version:** ${{ steps.go_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Update needed:** ${{ steps.compare.outputs.needs_update }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.compare.outputs.needs_update }}" = "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Pull request created to update Go to version ${{ steps.go_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Go version is already up to date!" >> $GITHUB_STEP_SUMMARY
+          fi
