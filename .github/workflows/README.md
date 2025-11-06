@@ -12,7 +12,7 @@ This directory contains the GitHub Actions workflows for the mikrotik-configurat
 
 **Jobs:**
 - **Lint**: Runs golangci-lint with comprehensive rules
-- **Test**: Runs unit tests on Go 1.22 and 1.23 with:
+- **Test**: Runs unit tests on latest stable and previous stable Go releases with:
   - `gotestsum` for better test output
   - `goteststats` for test analytics
   - Race detector enabled

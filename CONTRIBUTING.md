@@ -31,7 +31,9 @@ This project adheres to a code of conduct based on respect and professionalism. 
 
 Before you begin, ensure you have the following installed:
 
-- **Go 1.22 or later** - [Download](https://go.dev/doc/install)
+- **Go (latest stable)** - [Download](https://go.dev/doc/install)
+  - This project always uses the latest stable Go release
+  - Check `go.mod` for the current minimum version
 - **Git** - [Download](https://git-scm.com/downloads)
 - **golangci-lint v2** - [Installation guide](https://golangci-lint.run/docs/welcome/install/)
   ```bash
@@ -402,7 +404,7 @@ The project includes 5 main workflows:
 
 ### Key Features
 
-- **Automated Testing**: Unit tests, integration tests, and benchmarks on Go 1.22 and 1.23
+- **Automated Testing**: Unit tests, integration tests, and benchmarks on latest stable and previous stable Go releases
 - **Code Quality**: golangci-lint with 60+ linters, gosec security scanning, CodeQL analysis
 - **Binary Signing**: Keyless signing with cosign using GitHub OIDC tokens
 - **SBOM Generation**: Software Bill of Materials for supply chain security

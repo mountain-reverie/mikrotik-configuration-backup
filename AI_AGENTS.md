@@ -19,7 +19,7 @@ This document provides comprehensive guidance for AI agents (like Claude Code, G
 
 **Project Name:** MikroTik Configuration Backup
 **Type:** CLI Tool
-**Language:** Go 1.22+
+**Language:** Go (latest stable)
 **Purpose:** Backup MikroTik RouterOS configurations via SSH
 
 ### Key Features
@@ -112,8 +112,10 @@ This document provides comprehensive guidance for AI agents (like Claude Code, G
 
 ### Go Version and Style
 
-- **Minimum:** Go 1.22
-- **Target:** Latest stable (currently 1.23)
+- **Required:** Latest stable Go release
+- **Policy:** This project always uses the latest stable Go version
+- **Check:** See `go.mod` for current version
+- **CI Testing:** Tests run on both `stable` and `oldstable` Go releases
 - **Style Guide:** [Effective Go](https://go.dev/doc/effective_go) + [Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - **Formatting:** gofumpt (stricter than gofmt)
 
@@ -460,7 +462,7 @@ func TestBackupIntegration(t *testing.T) {
 
 **Every PR and Push:**
 - golangci-lint (60+ linters)
-- Unit tests (Go 1.22 and 1.23)
+- Unit tests (latest stable and previous stable Go releases)
 - Integration tests
 - Build for all platforms
 - gosec security scan

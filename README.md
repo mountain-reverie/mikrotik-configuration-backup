@@ -116,7 +116,9 @@ This project follows Go best practices and uses standard Go tooling.
 
 ### Prerequisites
 
-- **Go 1.22+** - [Installation guide](https://go.dev/doc/install)
+- **Go (latest stable)** - [Installation guide](https://go.dev/doc/install)
+  - This project always uses the latest stable Go release
+  - Check `go.mod` for the current minimum version
 - **golangci-lint v2** - [Installation guide](https://golangci-lint.run/docs/welcome/install/)
   ```bash
   go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
@@ -341,7 +343,7 @@ This catches issues locally before they reach CI/CD, saving time and preventing 
 The project uses GitHub Actions for CI/CD:
 
 - **Lint** - Runs golangci-lint
-- **Test** - Runs unit tests on Go 1.22 and 1.23
+- **Test** - Runs unit tests on latest stable and previous stable Go releases
 - **Integration Test** - Runs integration tests
 - **Build** - Builds binaries for Linux, macOS, and Windows
 - **Security** - Runs gosec security scanner
@@ -399,7 +401,7 @@ All release binaries are cryptographically signed and can be verified to ensure 
 
 This project follows Go best practices:
 
-- ✅ **Go 1.22+** - Uses latest stable Go version
+- ✅ **Latest Go** - Always uses the latest stable Go release
 - ✅ **Standard Project Layout** - Follows [golang-standards/project-layout](https://github.com/golang-standards/project-layout)
 - ✅ **Standard Go Commands** - No Make required, use `go build`, `go test`, etc.
 - ✅ **Dependency Injection** - Interfaces for testability
