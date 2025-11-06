@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/mountain-reverie/mikrotik-configuation-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/mountain-reverie/mikrotik-configuation-backup/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mountain-reverie/mikrotik-configuation-backup)](https://goreportcard.com/report/github.com/mountain-reverie/mikrotik-configuation-backup)
-[![codecov](https://codecov.io/gh/mountain-reverie/mikrotik-configuation-backup/branch/main/graph/badge.svg)](https://codecov.io/gh/mountain-reverie/mikrotik-configuation-backup)
 [![License](https://img.shields.io/github/license/mountain-reverie/mikrotik-configuation-backup)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/mountain-reverie/mikrotik-configuation-backup)](https://github.com/mountain-reverie/mikrotik-configuation-backup/releases)
+[![Documentation](https://img.shields.io/badge/docs-github.io-blue)](https://mountain-reverie.github.io/mikrotik-configuation-backup/)
 
 A robust CLI tool to backup MikroTik RouterOS configurations. This tool connects to MikroTik devices via SSH and exports their configurations to local files for version control and disaster recovery.
 
@@ -16,6 +16,8 @@ A robust CLI tool to backup MikroTik RouterOS configurations. This tool connects
 - 🔄 **CI/CD Ready** - Perfect for automated backup workflows
 - 🧪 **Well Tested** - Comprehensive unit and integration tests
 - 📦 **Easy Installation** - Multiple installation methods available
+- ✍️ **Signed Releases** - All binaries are signed with cosign for verification
+- 📋 **SBOM Included** - Software Bill of Materials for supply chain security
 
 ## Installation
 
@@ -28,6 +30,29 @@ go install github.com/mountain-reverie/mikrotik-configuation-backup/cmd/mikrotik
 ### Download Binary
 
 Download the latest binary from the [releases page](https://github.com/mountain-reverie/mikrotik-configuation-backup/releases).
+
+**Verify your download** (recommended):
+```bash
+# Install cosign (macOS)
+brew install sigstore/tap/cosign
+
+# Download release files
+wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt
+wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt.pem
+wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt.sig
+
+# Verify the signature (replace v1.0.0 with your version)
+cosign verify-blob checksums.txt \
+  --certificate checksums.txt.pem \
+  --signature checksums.txt.sig \
+  --certificate-identity=https://github.com/mountain-reverie/mikrotik-configuation-backup/.github/workflows/release.yml@refs/tags/v1.0.0 \
+  --certificate-oidc-issuer=https://token.actions.githubusercontent.com
+
+# Verify your binary's checksum
+sha256sum --ignore-missing -c checksums.txt
+```
+
+See the [workflow documentation](.github/workflows/README.md#binary-signing-and-verification) for detailed verification instructions.
 
 ### Build from Source
 
@@ -92,7 +117,10 @@ This project follows Go best practices and uses standard Go tooling.
 ### Prerequisites
 
 - **Go 1.22+** - [Installation guide](https://go.dev/doc/install)
-- **golangci-lint** - [Installation guide](https://golangci-lint.run/usage/install/)
+- **golangci-lint v2** - [Installation guide](https://golangci-lint.run/docs/welcome/install/)
+  ```bash
+  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+  ```
 
 ### Quick Start
 
@@ -264,13 +292,49 @@ Run quality checks:
 golangci-lint run
 ```
 
-### Pre-commit Hooks (Optional)
+### Git Hooks with Lefthook (Optional)
 
-Install pre-commit hooks to automatically run checks before committing:
+Install lefthook to automatically run checks before committing and pushing. Lefthook is a Go-native git hooks manager - no Python required!
 
-1. Install pre-commit: `pip install pre-commit`
-2. Install hooks: `pre-commit install`
-3. Test: `pre-commit run --all-files`
+1. Install lefthook and optional tools:
+   ```bash
+   # Required: lefthook
+   go install github.com/evilmartians/lefthook@latest
+
+   # Required: golangci-lint v2
+   go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+
+   # Required: code formatters
+   go install mvdan.cc/gofumpt@latest
+   go install golang.org/x/tools/cmd/goimports@latest
+
+   # Optional: security scanner (runs in CI if skipped locally)
+   go install github.com/securego/gosec/v2/cmd/gosec@latest
+   ```
+
+2. Install hooks to your local repository:
+   ```bash
+   lefthook install
+   ```
+
+3. Test manually (optional):
+   ```bash
+   # Run pre-commit checks
+   lefthook run pre-commit
+
+   # Run pre-push checks
+   lefthook run pre-push
+
+   # Run all hooks
+   lefthook run --all
+   ```
+
+Once installed, lefthook automatically runs:
+- **Before commit** (`pre-commit`): Formatting, linting, security scans, and quick tests
+- **Before push** (`pre-push`): Build verification and full test suite with race detector
+- **On commit message** (`commit-msg`): Validates conventional commit format (feat:, fix:, docs:, etc.)
+
+This catches issues locally before they reach CI/CD, saving time and preventing broken builds.
 
 ### Continuous Integration
 
@@ -316,6 +380,18 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 5. Commit your changes using conventional commits
 6. Push to your fork (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
+
+## Security
+
+This project implements comprehensive supply chain security:
+
+- ✅ **Signed Releases** - Keyless signing with cosign using GitHub OIDC
+- ✅ **Transparency Log** - All signatures recorded in Rekor
+- ✅ **SBOM Generation** - Software Bill of Materials for all releases
+- ✅ **Security Scanning** - CodeQL and gosec in CI/CD
+- ✅ **Dependency Review** - Automated vulnerability scanning
+
+All release binaries are cryptographically signed and can be verified to ensure they originated from this repository's official release workflow. See [verification instructions](.github/workflows/README.md#binary-signing-and-verification).
 
 ## Best Practices
 

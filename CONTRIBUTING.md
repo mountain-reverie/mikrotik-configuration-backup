@@ -11,6 +11,7 @@ Thank you for your interest in contributing to this project! This document provi
 - [Testing Guidelines](#testing-guidelines)
 - [Commit Messages](#commit-messages)
 - [Pull Request Process](#pull-request-process)
+- [CI/CD Workflows](#cicd-workflows)
 - [Release Process](#release-process)
 
 ## Code of Conduct
@@ -30,7 +31,10 @@ Before you begin, ensure you have the following installed:
 
 - **Go 1.22 or later** - [Download](https://go.dev/doc/install)
 - **Git** - [Download](https://git-scm.com/downloads)
-- **golangci-lint** - [Installation guide](https://golangci-lint.run/usage/install/)
+- **golangci-lint v2** - [Installation guide](https://golangci-lint.run/docs/welcome/install/)
+  ```bash
+  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+  ```
 
 ### Fork and Clone
 
@@ -380,28 +384,68 @@ Describe the tests you ran and how to reproduce them.
   git pull upstream main
   ```
 
+## CI/CD Workflows
+
+This project uses comprehensive GitHub Actions workflows for automation. All workflows are fully documented in [.github/workflows/README.md](.github/workflows/README.md).
+
+### Overview
+
+The project includes 5 main workflows:
+
+1. **CI Workflow** (`ci.yml`) - Reusable workflow for linting, testing, building, and security scanning
+2. **Main Branch** (`main.yml`) - Auto-tags releases and deploys GitHub Pages on main branch pushes
+3. **Pull Requests** (`pr.yml`) - Runs CI, coverage diff, Dependabot auto-merge, and Claude auto-fix
+4. **Release** (`release.yml`) - Creates signed releases with GoReleaser when tags are pushed
+5. **GitHub Pages** (`pages.yml`) - Builds and deploys documentation, coverage, and benchmarks
+
+### Key Features
+
+- **Automated Testing**: Unit tests, integration tests, and benchmarks on Go 1.22 and 1.23
+- **Code Quality**: golangci-lint with 60+ linters, gosec security scanning, CodeQL analysis
+- **Binary Signing**: Keyless signing with cosign using GitHub OIDC tokens
+- **SBOM Generation**: Software Bill of Materials for supply chain security
+- **Coverage Reports**: Self-hosted on GitHub Pages with interactive dashboards
+- **Auto-tagging**: Automatic semantic versioning on main branch
+- **Dependabot Integration**: Auto-merge safe updates, Claude auto-fix for failures
+
+### For Contributors
+
+When you create a pull request:
+- CI automatically runs all checks
+- Coverage diff is posted as a comment
+- Test results and artifacts are available in the Actions tab
+- Documentation preview is generated as an artifact
+
+For detailed information about workflows, secrets, configuration, and troubleshooting, see the [GitHub Actions documentation](.github/workflows/README.md).
+
 ## Release Process
 
 Releases are automated using GoReleaser and GitHub Actions.
 
 ### Creating a Release
 
-Only maintainers can create releases:
+**Option 1: Automatic (Recommended)**
+- Push to `main` branch
+- GitHub Actions automatically creates a tag (patch version bump)
+- Tag push triggers the release workflow
 
-1. Ensure `main` branch is stable
-2. Update version references if needed
-3. Create and push a version tag:
-   ```bash
-   git tag -a v1.2.3 -m "Release v1.2.3"
-   git push origin v1.2.3
-   ```
+**Option 2: Manual (for major/minor versions)**
+- Only maintainers can create manual releases
+- Create and push a version tag:
+  ```bash
+  git tag -a v1.2.3 -m "Release v1.2.3"
+  git push origin v1.2.3
+  ```
 
-4. GitHub Actions will automatically:
-   - Build binaries for all platforms
-   - Run all tests
-   - Create GitHub release
-   - Generate changelog
-   - Upload artifacts
+### What Happens During Release
+
+The release workflow automatically:
+- Builds binaries for all platforms (Linux, macOS, Windows)
+- Runs all tests and security scans
+- Signs binaries with cosign (keyless, using GitHub OIDC)
+- Generates SBOM for all artifacts
+- Creates GitHub release with changelog
+- Uploads signed binaries, signatures, certificates, and SBOMs
 
 ### Version Numbering
 
@@ -409,7 +453,7 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 - **MAJOR** - Incompatible API changes
 - **MINOR** - Backwards-compatible new functionality
-- **PATCH** - Backwards-compatible bug fixes
+- **PATCH** - Backwards-compatible bug fixes (auto-incremented on main branch)
 
 ## Getting Help
 
