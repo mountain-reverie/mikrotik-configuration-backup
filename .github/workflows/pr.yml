@@ -1,0 +1,318 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  security-events: write
+  packages: read
+  actions: read
+  pull-requests: write
+  pages: write
+  id-token: write
+
+jobs:
+  ci:
+    name: Run CI
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  coverage-diff:
+    name: Coverage Diff
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download PR coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: ./pr-coverage
+
+      - name: Checkout base branch
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+
+      - name: Generate base coverage
+        run: |
+          go test -coverprofile=base-coverage.out ./...
+
+      - name: Checkout PR branch
+        run: |
+          git checkout ${{ github.sha }}
+
+      - name: Install golang-cover-diff
+        run: |
+          go install github.com/taufikarifuddin/golang-cover-diff@latest
+
+      - name: Generate coverage diff
+        id: coverage_diff
+        run: |
+          golang-cover-diff -base base-coverage.out -new pr-coverage/coverage.out > coverage-diff.txt || true
+          if [ -f coverage-diff.txt ]; then
+            echo "has_diff=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_diff=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment PR with coverage diff
+        if: steps.coverage_diff.outputs.has_diff == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const diff = fs.readFileSync('coverage-diff.txt', 'utf8');
+
+            const body = `## Coverage Diff\n\n\`\`\`diff\n${diff}\n\`\`\``;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' && comment.body.includes('Coverage Diff')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  dependabot-automerge:
+    name: Dependabot Auto-merge
+    runs-on: ubuntu-latest
+    needs: ci
+    if: |
+      github.event_name == 'pull_request' &&
+      github.actor == 'dependabot[bot]'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if PR is safe to merge
+        id: check_safe
+        run: |
+          # Check if it's a Go module or GitHub Actions update
+          pr_title="${{ github.event.pull_request.title }}"
+          if [[ "$pr_title" == *"go.mod"* ]] || [[ "$pr_title" == *"github/workflows"* ]]; then
+            echo "safe=true" >> $GITHUB_OUTPUT
+          else
+            echo "safe=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enable auto-merge for Dependabot PRs
+        if: steps.check_safe.outputs.safe == 'true'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pages-preview:
+    name: Pages Preview
+    needs: ci
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/pages.yml
+    with:
+      artifact-name: github-pages-pr-${{ github.event.pull_request.number }}
+    secrets: inherit
+
+  pages-preview-comment:
+    name: Comment Pages Preview URL
+    runs-on: ubuntu-latest
+    needs: pages-preview
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.issue.number;
+            const body = `## 📊 Documentation Preview
+
+            Your changes have been built and are available for preview:
+
+            🔗 **Preview URL:** Artifacts from this build are available in the Actions tab
+
+            This preview includes:
+            - Test coverage report
+            - Benchmark results
+            - Benchmark comparisons
+            - Test statistics
+
+            The preview will be updated with each new commit.`;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' && comment.body.includes('Documentation Preview')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
+
+  claude-fix:
+    name: Claude Auto-fix
+    runs-on: ubuntu-latest
+    needs: ci
+    if: |
+      failure() &&
+      github.event_name == 'pull_request' &&
+      github.actor == 'dependabot[bot]'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check for previous Claude attempts
+        id: check_attempts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const claudeComments = comments.data.filter(comment =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('Claude Code attempted')
+            );
+
+            if (claudeComments.length > 0) {
+              core.setOutput('skip', 'true');
+              console.log('Claude has already attempted to fix this PR');
+            } else {
+              core.setOutput('skip', 'false');
+            }
+
+      - name: Checkout PR branch
+        if: steps.check_attempts.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        if: steps.check_attempts.outputs.skip != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install tools
+        if: steps.check_attempts.outputs.skip != 'true'
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go install golang.org/x/tools/gopls@latest
+
+      - name: Run Claude Code
+        if: steps.check_attempts.outputs.skip != 'true'
+        uses: anthropics/anthropic-code-action@v1
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            This Dependabot PR is failing CI. Please:
+            1. Run `go build ./...` to check for build errors
+            2. Run `golangci-lint run` to check for linting issues
+            3. Run `go test ./...` to check for test failures
+            4. Fix any issues found
+            5. Ensure all commands pass successfully
+
+            Focus on:
+            - Fixing breaking API changes
+            - Updating deprecated function calls
+            - Resolving import issues
+            - Fixing test failures
+
+          tools: |
+            Edit
+            Read
+            Bash
+
+      - name: Check for changes
+        if: steps.check_attempts.outputs.skip != 'true'
+        id: check_changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "fix: claude code automated fixes for dependabot update"
+          git push
+
+      - name: Comment on PR
+        if: always() && steps.check_attempts.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const hasChanges = '${{ steps.check_changes.outputs.has_changes }}' === 'true';
+            const body = hasChanges
+              ? '🤖 Claude Code attempted to fix the failing CI and committed changes.'
+              : '🤖 Claude Code attempted to fix the failing CI but found no changes to make.';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
