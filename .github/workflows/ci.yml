@@ -46,20 +46,35 @@ jobs:
           go-version: ${{ matrix.go-version }}
           cache: true
 
-      - name: Cache test tools
-        uses: actions/cache@v4
-        id: cache-tools
+      - name: Install gotestsum
+        uses: jaxxstorm/action-install-gh-release@v1.12.0
         with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-test-tools-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-test-tools-
+          repo: gotestyourself/gotestsum
 
-      - name: Install test tools
-        if: steps.cache-tools.outputs.cache-hit != 'true'
+      - name: Fetch goteststats @main SHA-1
+        id: goteststats-main
         run: |
-          go install gotest.tools/gotestsum@latest
-          go install github.com/hedhyw/goteststats@latest
+          sha1=$(curl \
+            --header "Accept: application/vnd.github+json" \
+            --silent \
+              https://api.github.com/repos/getvictor/goteststats/branches/main | \
+                jq --raw-output ".commit.sha")
+          echo "sha1=$sha1" >> "$GITHUB_OUTPUT"
+
+      - name: Cache goteststats
+        uses: actions/cache@v4
+        id: cache-goteststats
+        with:
+          path: ~/go/bin/goteststats
+          key: goteststats-${{ runner.os }}-sha1-${{ steps.goteststats-main.outputs.sha1 }}
+
+      - name: Install goteststats
+        if: steps.cache-goteststats.outputs.cache-hit != 'true'
+        run: |
+          go install github.com/getvictor/goteststats@latest
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Download dependencies
         run: go mod download
@@ -80,7 +95,7 @@ jobs:
           goteststats -input test-results/junit.xml -output test-results/stats.json || true
 
       - name: Generate coverage HTML report
-        if: matrix.go-version == '1.23'
+        if: matrix.go-version == 'stable'
         run: |
           go tool cover -html=coverage.out -o coverage.html
 
@@ -93,7 +108,7 @@ jobs:
           retention-days: 30
 
       - name: Upload coverage report
-        if: matrix.go-version == '1.23'
+        if: matrix.go-version == 'stable'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
