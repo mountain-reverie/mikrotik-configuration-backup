@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing to this project! This document provides guidelines and instructions for contributing.
 
+> **For AI Agents:** If you're an AI agent (like Claude Code, GitHub Copilot, ChatGPT, etc.), please see [AI_AGENTS.md](AI_AGENTS.md) for comprehensive technical documentation including project structure, coding patterns, testing guidelines, and CI/CD workflows tailored for AI-assisted development.
+
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)

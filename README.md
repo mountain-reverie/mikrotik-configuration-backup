@@ -371,6 +371,8 @@ goreleaser release --snapshot --clean --skip=publish
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+**For AI Agents:** See [AI_AGENTS.md](AI_AGENTS.md) for comprehensive documentation on project structure, coding standards, and workflows tailored for AI-assisted development.
+
 ### Quick Contribution Guide
 
 1. Fork the repository
