@@ -413,6 +413,7 @@ The project includes 6 main workflows:
 - **Auto-tagging**: Automatic semantic versioning on main branch
 - **Dependabot Integration**: Auto-merge safe updates, Claude auto-fix for failures
 - **Go Version Updates**: Monthly automated checks for new Go releases
+- **GitHub Actions Security**: All actions pinned to commit SHAs (not tags) for supply chain security
 
 ### For Contributors
 
@@ -423,6 +424,43 @@ When you create a pull request:
 - Documentation preview is generated as an artifact
 
 For detailed information about workflows, secrets, configuration, and troubleshooting, see the [GitHub Actions documentation](.github/workflows/README.md).
+
+### GitHub Actions Security Policy
+
+**CRITICAL: All GitHub Actions MUST be pinned to commit SHAs, not tags.**
+
+This is a security requirement to prevent supply chain attacks through tag poisoning. Tags are mutable and can be changed to point to malicious code, while commit SHAs are immutable.
+
+**Correct format:**
+```yaml
+# ✅ GOOD - Pinned to SHA with version comment
+- uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+# ❌ BAD - Using tag (mutable, vulnerable to attacks)
+- uses: actions/checkout@v4
+```
+
+**When updating GitHub Actions:**
+
+1. Find the release on the action's GitHub repository
+2. Get the full 40-character commit SHA from the release tag:
+   ```bash
+   git ls-remote https://github.com/actions/checkout refs/tags/v4.3.0
+   ```
+3. Update all workflow files with the SHA
+4. Update `.github/ACTION_SHAS.md` with the new version, SHA, and date
+5. Always add a version comment after the SHA for readability
+
+**Documentation:**
+- All action SHAs are documented in `.github/ACTION_SHAS.md`
+- Includes version, commit SHA, and last updated date
+- Provides instructions for finding and updating SHAs
+
+**Why this matters:**
+- Prevents attackers from moving tags to malicious commits
+- Ensures reproducible builds with exact versions
+- Provides explicit control over dependency updates
+- Aligns with security best practices (SLSA, OpenSSF Scorecards)
 
 ## Release Process
 

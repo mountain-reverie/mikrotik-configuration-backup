@@ -634,6 +634,54 @@ cosign verify-blob checksums.txt \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
 
+### GitHub Actions Security
+
+**CRITICAL SECURITY REQUIREMENT:** All GitHub Actions MUST be pinned to commit SHAs, not tags.
+
+**Why SHA Pinning?**
+- ✅ Prevents supply chain attacks (tag poisoning)
+- ✅ Ensures exact version is used (immutable)
+- ✅ No silent updates that could introduce vulnerabilities
+- ✅ Explicit control over when to update dependencies
+
+**Tag Vulnerability:**
+- ❌ Tags can be moved to point to different commits
+- ❌ Attacker could compromise an action and republish under existing tag
+- ❌ Automated updates could pull malicious code
+
+**Correct Format:**
+```yaml
+# ✅ GOOD - Pinned to SHA with version comment
+- uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+# ❌ BAD - Using tag (mutable)
+- uses: actions/checkout@v4
+
+# ❌ BAD - Using branch (very mutable)
+- uses: actions/checkout@main
+```
+
+**Documentation:**
+- All action SHAs are documented in `.github/ACTION_SHAS.md`
+- When updating an action:
+  1. Find the release on GitHub
+  2. Get the 40-character commit SHA from the release tag
+  3. Update all workflow files using the SHA
+  4. Update `.github/ACTION_SHAS.md` with version, SHA, and date
+  5. Always add a version comment after the SHA for readability
+
+**Example Update Process:**
+```bash
+# Find the SHA for a release
+git ls-remote https://github.com/actions/checkout refs/tags/v4.3.0
+
+# Update workflow files
+sed -i 's|uses: actions/checkout@v4|uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0|g' .github/workflows/*.yml
+
+# Update documentation
+# Edit .github/ACTION_SHAS.md with new version and SHA
+```
+
 ## Important Constraints
 
 ### What NOT to Do
