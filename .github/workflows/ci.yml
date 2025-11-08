@@ -82,22 +82,14 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
-      - name: Detect Go version
-        id: go_version
+      - name: Set Go toolchain
         run: |
+          # Workaround for Go 1.25 covdata bug: https://github.com/golang/go/issues/75031
+          # Explicitly set GOTOOLCHAIN to avoid auto-download toolchain issues
           go_version=$(go version | awk '{print $3}' | sed 's/go//')
-          echo "version=$go_version" >> $GITHUB_OUTPUT
-          # Check if version is < 1.25
-          if [[ $(echo -e "1.25\n$go_version" | sort -V | head -n1) == "$go_version" ]] && [[ "$go_version" != "1.25"* ]]; then
-            echo "disable_covdata=1" >> $GITHUB_OUTPUT
-          else
-            echo "disable_covdata=" >> $GITHUB_OUTPUT
-          fi
+          go env -w GOTOOLCHAIN=${go_version}+auto
 
       - name: Run tests with gotestsum
-        env:
-          # Disable covdata tool for Go < 1.25 (not available in Go 1.24 and earlier)
-          GOTESTSUM_EXPERIMENTAL_DISABLE_COVERAGE: ${{ steps.go_version.outputs.disable_covdata }}
         run: |
           mkdir -p test-results
           gotestsum --junitfile test-results/junit.xml \
