@@ -164,8 +164,13 @@ jobs:
           git fetch origin ${{ github.base_ref }}
           git checkout origin/${{ github.base_ref }}
 
-          # Run tests on base branch
-          go test -coverprofile=base-coverage.out ./...
+          # Run tests on base branch (may fail if no Go code exists yet)
+          if go test -coverprofile=base-coverage.out ./... 2>/dev/null; then
+            echo "Base branch coverage generated successfully"
+          else
+            echo "Base branch has no Go code or tests failed - assuming 0% coverage"
+            echo "mode: atomic" > base-coverage.out
+          fi
 
           # Restore PR state
           git checkout -
