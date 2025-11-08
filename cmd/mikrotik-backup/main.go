@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -178,6 +177,3 @@ func getBuildInfo() BuildInfo {
 
 	return info
 }
-
-// Ensure io.Writer is imported and used.
-var _ io.Writer
