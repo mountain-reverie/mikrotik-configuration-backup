@@ -154,6 +154,10 @@ jobs:
   build:
     name: Build (${{ matrix.goos }}-${{ matrix.goarch }})
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -165,12 +169,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0  # Full history for CodeQL PR diff analysis
 
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Initialize CodeQL
+        # Only run CodeQL on linux-amd64 to avoid redundant analysis
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        uses: github/codeql-action/init@ab2e54f42aa112ff08704159b88a57517f6f0ebb # v3
+        with:
+          languages: go
+          queries: security-and-quality
 
       - name: Build binary
         env:
@@ -181,6 +195,12 @@ jobs:
           go build -trimpath -ldflags="-s -w" \
             -o mikrotik-backup-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} \
             ./cmd/mikrotik-backup
+
+      - name: Perform CodeQL Analysis
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        uses: github/codeql-action/analyze@ab2e54f42aa112ff08704159b88a57517f6f0ebb # v3
+        with:
+          category: "/language:go"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v4.5.0
@@ -208,42 +228,9 @@ jobs:
           args: '-no-fail -fmt sarif -out gosec-results.sarif ./...'
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@f09c1c0a94de965c15400f5634aa42fac8fb8f88 # v3.27.9
+        uses: github/codeql-action/upload-sarif@ab2e54f42aa112ff08704159b88a57517f6f0ebb # v3
         with:
           sarif_file: gosec-results.sarif
-
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-        with:
-          fetch-depth: 0  # Full history for PR diff analysis
-
-      - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@f09c1c0a94de965c15400f5634aa42fac8fb8f88 # v3.27.9
-        with:
-          languages: go
-          queries: security-and-quality
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@f09c1c0a94de965c15400f5634aa42fac8fb8f88 # v3.27.9
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@f09c1c0a94de965c15400f5634aa42fac8fb8f88 # v3.27.9
-        with:
-          category: "/language:go"
 
   dependency-review:
     name: Dependency Review
@@ -254,4 +241,4 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@51d11238a9c6e6eb8a6bc314613804d089106ab0 # v4.5.0
+        uses: actions/dependency-review-action@40c09b7dc99638e5ddb0bfd91c1673effc064d8a # v4.8.1
