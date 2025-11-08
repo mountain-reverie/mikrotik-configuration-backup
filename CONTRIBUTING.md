@@ -45,13 +45,13 @@ Before you begin, ensure you have the following installed:
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/mikrotik-configuation-backup.git
-   cd mikrotik-configuation-backup
+   git clone https://github.com/YOUR_USERNAME/mikrotik-configuration-backup.git
+   cd mikrotik-configuration-backup
    ```
 
 3. Add the upstream remote:
    ```bash
-   git remote add upstream https://github.com/mountain-reverie/mikrotik-configuation-backup.git
+   git remote add upstream https://github.com/mountain-reverie/mikrotik-configuration-backup.git
    ```
 
 ### Set Up Development Environment
@@ -504,8 +504,8 @@ This project follows [Semantic Versioning](https://semver.org/):
 If you need help:
 
 - 📖 Read the [README.md](README.md)
-- 💬 Start a [Discussion](https://github.com/mountain-reverie/mikrotik-configuation-backup/discussions)
-- 🐛 Check existing [Issues](https://github.com/mountain-reverie/mikrotik-configuation-backup/issues)
+- 💬 Start a [Discussion](https://github.com/mountain-reverie/mikrotik-configuration-backup/discussions)
+- 🐛 Check existing [Issues](https://github.com/mountain-reverie/mikrotik-configuration-backup/issues)
 
 ## Additional Resources
 

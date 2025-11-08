@@ -234,17 +234,17 @@ jobs:
                 <h1>MikroTik Configuration Backup</h1>
                 <p class="subtitle">A robust CLI tool to backup MikroTik RouterOS configurations</p>
                 <div class="badges">
-                  <a href="https://github.com/mountain-reverie/mikrotik-configuation-backup/actions" class="badge">
-                    <img src="https://github.com/mountain-reverie/mikrotik-configuation-backup/actions/workflows/ci.yml/badge.svg" alt="CI">
+                  <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup/actions" class="badge">
+                    <img src="https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml/badge.svg" alt="CI">
                   </a>
-                  <a href="https://goreportcard.com/report/github.com/mountain-reverie/mikrotik-configuation-backup" class="badge">
-                    <img src="https://goreportcard.com/badge/github.com/mountain-reverie/mikrotik-configuation-backup" alt="Go Report Card">
+                  <a href="https://goreportcard.com/report/github.com/mountain-reverie/mikrotik-configuration-backup" class="badge">
+                    <img src="https://goreportcard.com/badge/github.com/mountain-reverie/mikrotik-configuration-backup" alt="Go Report Card">
                   </a>
                   <a href="coverage.html" class="badge">
                     <img src="coverage-badge.svg" alt="Coverage">
                   </a>
-                  <a href="https://github.com/mountain-reverie/mikrotik-configuation-backup/releases" class="badge">
-                    <img src="https://img.shields.io/github/v/release/mountain-reverie/mikrotik-configuation-backup" alt="Release">
+                  <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup/releases" class="badge">
+                    <img src="https://img.shields.io/github/v/release/mountain-reverie/mikrotik-configuration-backup" alt="Release">
                   </a>
                 </div>
               </header>
@@ -293,13 +293,13 @@ jobs:
                   <div class="card">
                     <h2>📖 Documentation</h2>
                     <p>Read the full project documentation on GitHub.</p>
-                    <a href="https://github.com/mountain-reverie/mikrotik-configuation-backup" class="btn">View on GitHub</a>
+                    <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup" class="btn">View on GitHub</a>
                   </div>
 
                   <div class="card">
                     <h2>🚀 Releases</h2>
                     <p>Download the latest release binaries for your platform.</p>
-                    <a href="https://github.com/mountain-reverie/mikrotik-configuation-backup/releases" class="btn">View Releases</a>
+                    <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup/releases" class="btn">View Releases</a>
                   </div>
                 </div>
               </main>

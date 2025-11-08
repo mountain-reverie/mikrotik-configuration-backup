@@ -19,7 +19,7 @@ pre-commit:
     # Organize imports
     go-imports:
       glob: "*.go"
-      run: goimports -w -local github.com/mountain-reverie/mikrotik-configuation-backup {staged_files}
+      run: goimports -w -local github.com/mountain-reverie/mikrotik-configuration-backup {staged_files}
 
     # Run go mod tidy
     go-mod-tidy:

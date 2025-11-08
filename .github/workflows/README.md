@@ -171,15 +171,15 @@ winget install Sigstore.cosign
 #### Verify the checksums file
 ```bash
 # Download the release files
-wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt
-wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt.pem
-wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt.sig
+wget https://github.com/mountain-reverie/mikrotik-configuration-backup/releases/download/v1.0.0/checksums.txt
+wget https://github.com/mountain-reverie/mikrotik-configuration-backup/releases/download/v1.0.0/checksums.txt.pem
+wget https://github.com/mountain-reverie/mikrotik-configuration-backup/releases/download/v1.0.0/checksums.txt.sig
 
 # Verify the signature
 cosign verify-blob checksums.txt \
   --certificate checksums.txt.pem \
   --signature checksums.txt.sig \
-  --certificate-identity=https://github.com/mountain-reverie/mikrotik-configuation-backup/.github/workflows/release.yml@refs/tags/v1.0.0 \
+  --certificate-identity=https://github.com/mountain-reverie/mikrotik-configuration-backup/.github/workflows/release.yml@refs/tags/v1.0.0 \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
 
@@ -187,7 +187,7 @@ cosign verify-blob checksums.txt \
 Once the checksums file is verified, check your binary matches:
 ```bash
 # Download your platform's binary
-wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/mikrotik-backup_1.0.0_Linux_x86_64.tar.gz
+wget https://github.com/mountain-reverie/mikrotik-configuration-backup/releases/download/v1.0.0/mikrotik-backup_1.0.0_Linux_x86_64.tar.gz
 
 # Verify checksum
 sha256sum --ignore-missing -c checksums.txt

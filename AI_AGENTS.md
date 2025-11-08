@@ -134,7 +134,7 @@ import (
     // Standard library first
     // External packages second
     // Internal packages last with local prefix
-    "github.com/mountain-reverie/mikrotik-configuation-backup/internal/ssh"
+    "github.com/mountain-reverie/mikrotik-configuration-backup/internal/ssh"
 )
 ```
 
@@ -630,7 +630,7 @@ Users can verify releases:
 cosign verify-blob checksums.txt \
   --certificate checksums.txt.pem \
   --signature checksums.txt.sig \
-  --certificate-identity=https://github.com/mountain-reverie/mikrotik-configuation-backup/.github/workflows/release.yml@refs/tags/v1.0.0 \
+  --certificate-identity=https://github.com/mountain-reverie/mikrotik-configuration-backup/.github/workflows/release.yml@refs/tags/v1.0.0 \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 ```
 
@@ -763,7 +763,7 @@ golangci-lint run
 
 # Format
 gofumpt -l -w .
-goimports -w -local github.com/mountain-reverie/mikrotik-configuation-backup .
+goimports -w -local github.com/mountain-reverie/mikrotik-configuration-backup .
 
 # Clean
 go clean
@@ -783,10 +783,10 @@ go mod tidy
 
 ### Important Links
 
-- **Repository:** https://github.com/mountain-reverie/mikrotik-configuation-backup
-- **Documentation:** https://mountain-reverie.github.io/mikrotik-configuation-backup/
-- **Issues:** https://github.com/mountain-reverie/mikrotik-configuation-backup/issues
-- **Discussions:** https://github.com/mountain-reverie/mikrotik-configuation-backup/discussions
+- **Repository:** https://github.com/mountain-reverie/mikrotik-configuration-backup
+- **Documentation:** https://mountain-reverie.github.io/mikrotik-configuration-backup/
+- **Issues:** https://github.com/mountain-reverie/mikrotik-configuration-backup/issues
+- **Discussions:** https://github.com/mountain-reverie/mikrotik-configuration-backup/discussions
 
 ### Getting Help
 

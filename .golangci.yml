@@ -29,7 +29,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/mountain-reverie/mikrotik-configuation-backup
+        - github.com/mountain-reverie/mikrotik-configuration-backup
 
 linters:
   enable:

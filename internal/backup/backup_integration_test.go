@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mountain-reverie/mikrotik-configuation-backup/internal/backup"
+	"github.com/mountain-reverie/mikrotik-configuration-backup/internal/backup"
 )
 
 // TestBackupIntegration demonstrates an integration test structure.

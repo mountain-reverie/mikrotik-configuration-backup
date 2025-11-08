@@ -1,4 +1,4 @@
-module github.com/mountain-reverie/mikrotik-configuation-backup
+module github.com/mountain-reverie/mikrotik-configuration-backup
 
 go 1.25.3
 

@@ -1,10 +1,10 @@
 # MikroTik Configuration Backup
 
-[![CI](https://github.com/mountain-reverie/mikrotik-configuation-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/mountain-reverie/mikrotik-configuation-backup/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mountain-reverie/mikrotik-configuation-backup)](https://goreportcard.com/report/github.com/mountain-reverie/mikrotik-configuation-backup)
-[![License](https://img.shields.io/github/license/mountain-reverie/mikrotik-configuation-backup)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/mountain-reverie/mikrotik-configuation-backup)](https://github.com/mountain-reverie/mikrotik-configuation-backup/releases)
-[![Documentation](https://img.shields.io/badge/docs-github.io-blue)](https://mountain-reverie.github.io/mikrotik-configuation-backup/)
+[![CI](https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mountain-reverie/mikrotik-configuration-backup)](https://goreportcard.com/report/github.com/mountain-reverie/mikrotik-configuration-backup)
+[![License](https://img.shields.io/github/license/mountain-reverie/mikrotik-configuration-backup)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/mountain-reverie/mikrotik-configuration-backup)](https://github.com/mountain-reverie/mikrotik-configuration-backup/releases)
+[![Documentation](https://img.shields.io/badge/docs-github.io-blue)](https://mountain-reverie.github.io/mikrotik-configuration-backup/)
 
 A robust CLI tool to backup MikroTik RouterOS configurations. This tool connects to MikroTik devices via SSH and exports their configurations to local files for version control and disaster recovery.
 
@@ -24,12 +24,12 @@ A robust CLI tool to backup MikroTik RouterOS configurations. This tool connects
 ### Using Go Install
 
 ```bash
-go install github.com/mountain-reverie/mikrotik-configuation-backup/cmd/mikrotik-backup@latest
+go install github.com/mountain-reverie/mikrotik-configuration-backup/cmd/mikrotik-backup@latest
 ```
 
 ### Download Binary
 
-Download the latest binary from the [releases page](https://github.com/mountain-reverie/mikrotik-configuation-backup/releases).
+Download the latest binary from the [releases page](https://github.com/mountain-reverie/mikrotik-configuration-backup/releases).
 
 **Verify your download** (recommended):
 ```bash
@@ -37,15 +37,15 @@ Download the latest binary from the [releases page](https://github.com/mountain-
 brew install sigstore/tap/cosign
 
 # Download release files
-wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt
-wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt.pem
-wget https://github.com/mountain-reverie/mikrotik-configuation-backup/releases/download/v1.0.0/checksums.txt.sig
+wget https://github.com/mountain-reverie/mikrotik-configuration-backup/releases/download/v1.0.0/checksums.txt
+wget https://github.com/mountain-reverie/mikrotik-configuration-backup/releases/download/v1.0.0/checksums.txt.pem
+wget https://github.com/mountain-reverie/mikrotik-configuration-backup/releases/download/v1.0.0/checksums.txt.sig
 
 # Verify the signature (replace v1.0.0 with your version)
 cosign verify-blob checksums.txt \
   --certificate checksums.txt.pem \
   --signature checksums.txt.sig \
-  --certificate-identity=https://github.com/mountain-reverie/mikrotik-configuation-backup/.github/workflows/release.yml@refs/tags/v1.0.0 \
+  --certificate-identity=https://github.com/mountain-reverie/mikrotik-configuration-backup/.github/workflows/release.yml@refs/tags/v1.0.0 \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
 # Verify your binary's checksum
@@ -57,8 +57,8 @@ See the [workflow documentation](.github/workflows/README.md#binary-signing-and-
 ### Build from Source
 
 ```bash
-git clone https://github.com/mountain-reverie/mikrotik-configuation-backup.git
-cd mikrotik-configuation-backup
+git clone https://github.com/mountain-reverie/mikrotik-configuration-backup.git
+cd mikrotik-configuration-backup
 go build -o mikrotik-backup ./cmd/mikrotik-backup
 ```
 
@@ -128,8 +128,8 @@ This project follows Go best practices and uses standard Go tooling.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/mountain-reverie/mikrotik-configuation-backup.git
-   cd mikrotik-configuation-backup
+   git clone https://github.com/mountain-reverie/mikrotik-configuration-backup.git
+   cd mikrotik-configuration-backup
    ```
 
 2. Download dependencies:
@@ -429,9 +429,9 @@ This project is licensed under the terms specified in the [LICENSE](LICENSE) fil
 
 ## Support
 
-- 📖 [Documentation](https://github.com/mountain-reverie/mikrotik-configuation-backup/wiki)
-- 🐛 [Issue Tracker](https://github.com/mountain-reverie/mikrotik-configuation-backup/issues)
-- 💬 [Discussions](https://github.com/mountain-reverie/mikrotik-configuation-backup/discussions)
+- 📖 [Documentation](https://github.com/mountain-reverie/mikrotik-configuration-backup/wiki)
+- 🐛 [Issue Tracker](https://github.com/mountain-reverie/mikrotik-configuration-backup/issues)
+- 💬 [Discussions](https://github.com/mountain-reverie/mikrotik-configuration-backup/discussions)
 
 ## Acknowledgments
 

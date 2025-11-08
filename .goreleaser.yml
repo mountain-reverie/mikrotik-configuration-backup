@@ -115,7 +115,7 @@ changelog:
 release:
   github:
     owner: mountain-reverie
-    name: mikrotik-configuation-backup
+    name: mikrotik-configuration-backup
   draft: false
   prerelease: auto
   mode: append
@@ -125,7 +125,7 @@ release:
     Release of mikrotik-backup version {{ .Version }}.
 
   footer: |
-    **Full Changelog**: https://github.com/mountain-reverie/mikrotik-configuation-backup/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/mountain-reverie/mikrotik-configuration-backup/compare/{{ .PreviousTag }}...{{ .Tag }}
 
     ## Installation
 
@@ -139,7 +139,7 @@ release:
 
     ### Go Install
     ```bash
-    go install github.com/mountain-reverie/mikrotik-configuation-backup/cmd/mikrotik-backup@{{ .Tag }}
+    go install github.com/mountain-reverie/mikrotik-configuration-backup/cmd/mikrotik-backup@{{ .Tag }}
     ```
 
     ## Docker

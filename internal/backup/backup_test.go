@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mountain-reverie/mikrotik-configuation-backup/internal/backup"
+	"github.com/mountain-reverie/mikrotik-configuration-backup/internal/backup"
 )
 
 // mockSSHClient is a mock implementation of SSHClient for testing.
