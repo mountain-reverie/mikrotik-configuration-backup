@@ -147,8 +147,14 @@ jobs:
           # Update the go-version matrix in ci.yml
           sed -i "s/go-version: \[.*\]  # Updated by go-version-update workflow/go-version: ['$stable', '$oldstable']  # Updated by go-version-update workflow/" .github/workflows/ci.yml
 
+          # Update the matrix include section for is-latest flag
+          # Find the include section and update both version entries
+          sed -i "/- go-version: '[0-9.]*'/{N;s/- go-version: '[0-9.]*'\n            is-latest: true/- go-version: '$stable'\n            is-latest: true/;}" .github/workflows/ci.yml
+          sed -i "/- go-version: '[0-9.]*'/{N;s/- go-version: '[0-9.]*'\n            is-latest: false/- go-version: '$oldstable'\n            is-latest: false/;}" .github/workflows/ci.yml
+
           echo "ci.yml updated successfully"
-          grep -A 1 "go-version:" .github/workflows/ci.yml
+          echo "Matrix configuration:"
+          grep -A 7 "go-version:" .github/workflows/ci.yml | head -8
 
       - name: Create Pull Request
         if: steps.compare.outputs.needs_update == 'true'
