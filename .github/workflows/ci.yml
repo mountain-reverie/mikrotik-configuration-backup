@@ -24,7 +24,7 @@ jobs:
           cache: true
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.15
+        uses: golangci/golangci-lint-action@0a35821d5c230e903fcfe077583637dea1b27b47 # v9
         with:
           version: latest
           args: --timeout=5m
@@ -82,7 +82,22 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
+      - name: Detect Go version
+        id: go_version
+        run: |
+          go_version=$(go version | awk '{print $3}' | sed 's/go//')
+          echo "version=$go_version" >> $GITHUB_OUTPUT
+          # Check if version is < 1.25
+          if [[ $(echo -e "1.25\n$go_version" | sort -V | head -n1) == "$go_version" ]] && [[ "$go_version" != "1.25"* ]]; then
+            echo "disable_covdata=1" >> $GITHUB_OUTPUT
+          else
+            echo "disable_covdata=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run tests with gotestsum
+        env:
+          # Disable covdata tool for Go < 1.25 (not available in Go 1.24 and earlier)
+          GOTESTSUM_EXPERIMENTAL_DISABLE_COVERAGE: ${{ steps.go_version.outputs.disable_covdata }}
         run: |
           mkdir -p test-results
           gotestsum --junitfile test-results/junit.xml \
@@ -207,6 +222,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0  # Full history for PR diff analysis
 
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
