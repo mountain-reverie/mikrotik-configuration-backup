@@ -21,93 +21,11 @@ jobs:
     name: Run CI
     uses: ./.github/workflows/ci.yml
     secrets: inherit
-
-  coverage-diff:
-    name: Coverage Diff
-    runs-on: ubuntu-latest
-    needs: ci
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Download PR coverage
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.2.0
-        with:
-          name: coverage-report
-          path: ./pr-coverage
-
-      - name: Checkout base branch
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          git checkout origin/${{ github.base_ref }}
-
-      - name: Generate base coverage
-        run: |
-          go test -coverprofile=base-coverage.out ./...
-
-      - name: Checkout PR branch
-        run: |
-          git checkout ${{ github.sha }}
-
-      - name: Install golang-cover-diff
-        run: |
-          go install github.com/taufikarifuddin/golang-cover-diff@latest
-
-      - name: Generate coverage diff
-        id: coverage_diff
-        run: |
-          golang-cover-diff -base base-coverage.out -new pr-coverage/coverage.out > coverage-diff.txt || true
-          if [ -f coverage-diff.txt ]; then
-            echo "has_diff=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_diff=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Comment PR with coverage diff
-        if: steps.coverage_diff.outputs.has_diff == 'true'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          script: |
-            const fs = require('fs');
-            const diff = fs.readFileSync('coverage-diff.txt', 'utf8');
-
-            const body = `## Coverage Diff\n\n\`\`\`diff\n${diff}\n\`\`\``;
-
-            // Find existing comment
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const botComment = comments.data.find(comment =>
-              comment.user.type === 'Bot' && comment.body.includes('Coverage Diff')
-            );
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: body
-              });
-            }
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      pull-requests: write
 
   dependabot-automerge:
     name: Dependabot Auto-merge

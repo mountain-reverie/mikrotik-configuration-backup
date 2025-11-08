@@ -32,6 +32,9 @@ jobs:
   test:
     name: Test (Go ${{ matrix.go-version }})
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -150,6 +153,75 @@ jobs:
             coverage.out
             coverage.html
           retention-days: 30
+
+      - name: Generate base branch coverage (for diff)
+        if: matrix.is-latest && github.event_name == 'pull_request'
+        run: |
+          # Save current PR coverage
+          cp coverage.out pr-coverage.out
+
+          # Fetch and checkout base branch
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+
+          # Run tests on base branch
+          go test -coverprofile=base-coverage.out ./...
+
+          # Restore PR state
+          git checkout -
+
+      - name: Install golang-cover-diff
+        if: matrix.is-latest && github.event_name == 'pull_request'
+        run: |
+          go install github.com/taufikarifuddin/golang-cover-diff@latest
+
+      - name: Generate coverage diff
+        if: matrix.is-latest && github.event_name == 'pull_request'
+        id: coverage_diff
+        run: |
+          golang-cover-diff -base base-coverage.out -new pr-coverage.out > coverage-diff.txt || true
+          if [ -f coverage-diff.txt ] && [ -s coverage-diff.txt ]; then
+            echo "has_diff=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_diff=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment PR with coverage diff
+        if: matrix.is-latest && github.event_name == 'pull_request' && steps.coverage_diff.outputs.has_diff == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const diff = fs.readFileSync('coverage-diff.txt', 'utf8');
+
+            const body = `## Coverage Diff\n\n\`\`\`diff\n${diff}\n\`\`\``;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' && comment.body.includes('Coverage Diff')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
 
   integration-test:
     name: Integration Tests
