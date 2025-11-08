@@ -101,7 +101,7 @@ jobs:
           mkdir -p test-results
           gotestsum --junitfile test-results/junit.xml \
             --format testname \
-            -- -v -race -coverprofile=coverage.out -covermode=atomic ./...
+            -- -v -tags=integration -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Generate test stats
         if: always()
@@ -222,25 +222,6 @@ jobs:
                 body: body
               });
             }
-
-  integration-test:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-
-      - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Run integration tests
-        run: go test -v -tags=integration ./...
 
   build:
     name: Build (${{ matrix.goos }}-${{ matrix.goarch }})
