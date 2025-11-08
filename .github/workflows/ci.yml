@@ -91,7 +91,7 @@ jobs:
         run: |
           # Workaround for Go 1.25 covdata bug: https://github.com/golang/go/issues/75031
           # Explicitly set GOTOOLCHAIN to avoid auto-download toolchain issues
-          go env -w GOTOOLCHAIN=1.25.0+auto
+          go env -w GOTOOLCHAIN=go1.25.0+auto
 
       - name: Run tests with gotestsum
         run: |
