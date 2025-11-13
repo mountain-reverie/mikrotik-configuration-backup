@@ -1,0 +1,281 @@
+name: Update Go Version
+
+on:
+  schedule:
+    # Run on the 1st of every month at 9:00 AM UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-go-version:
+    name: Check and Update Go Version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest stable and oldstable Go versions
+        id: go_version
+        run: |
+          # Fetch all Go releases from official API
+          echo "Fetching Go releases from go.dev/dl/?mode=json..."
+          releases=$(curl -s 'https://go.dev/dl/?mode=json')
+
+          # Extract the two latest stable versions (stable and oldstable)
+          # Filter for stable releases, extract version field, sort by version number
+          versions=$(echo "$releases" | jq -r '[.[] | select(.stable == true) | .version] | sort_by(split(".") | map(tonumber)) | reverse | .[0:2]')
+
+          stable_version=$(echo "$versions" | jq -r '.[0]')
+          oldstable_version=$(echo "$versions" | jq -r '.[1]')
+
+          if [ -z "$stable_version" ] || [ -z "$oldstable_version" ]; then
+            echo "Error: Could not fetch Go versions"
+            exit 1
+          fi
+
+          # Remove 'go' prefix to get just the version numbers
+          stable_number="${stable_version#go}"
+          oldstable_number="${oldstable_version#go}"
+
+          # Get major.minor.0 versions for go.mod
+          stable_minor=$(echo "$stable_number" | cut -d. -f1,2)
+          go_mod_version="${stable_minor}.0"
+
+          echo "Latest stable Go version: $stable_number"
+          echo "Latest oldstable Go version: $oldstable_number"
+          echo "go.mod version: $go_mod_version"
+
+          echo "stable=$stable_number" >> $GITHUB_OUTPUT
+          echo "oldstable=$oldstable_number" >> $GITHUB_OUTPUT
+          echo "go_mod_version=$go_mod_version" >> $GITHUB_OUTPUT
+          echo "stable_full=$stable_version" >> $GITHUB_OUTPUT
+          echo "oldstable_full=$oldstable_version" >> $GITHUB_OUTPUT
+
+      - name: Get current Go version from go.mod
+        id: current_version
+        run: |
+          current_version=$(grep '^go ' go.mod | awk '{print $2}')
+          echo "Current Go version in go.mod: $current_version"
+          echo "version=$current_version" >> $GITHUB_OUTPUT
+
+      - name: Get current CI Go versions
+        id: current_ci_versions
+        run: |
+          # Extract go-version array from ci.yml
+          stable_ci=$(grep -A 1 "go-version:" .github/workflows/ci.yml | grep -oP "'\K[0-9]+\.[0-9]+\.[0-9]+" | head -n1)
+          oldstable_ci=$(grep -A 1 "go-version:" .github/workflows/ci.yml | grep -oP "'\K[0-9]+\.[0-9]+\.[0-9]+" | tail -n1)
+
+          echo "Current CI versions:"
+          echo "  Stable: $stable_ci"
+          echo "  Oldstable: $oldstable_ci"
+
+          echo "stable=$stable_ci" >> $GITHUB_OUTPUT
+          echo "oldstable=$oldstable_ci" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        id: compare
+        run: |
+          go_mod_latest="${{ steps.go_version.outputs.go_mod_version }}"
+          go_mod_current="${{ steps.current_version.outputs.version }}"
+          ci_stable_latest="${{ steps.go_version.outputs.stable }}"
+          ci_stable_current="${{ steps.current_ci_versions.outputs.stable }}"
+          ci_oldstable_latest="${{ steps.go_version.outputs.oldstable }}"
+          ci_oldstable_current="${{ steps.current_ci_versions.outputs.oldstable }}"
+
+          echo "Comparing versions:"
+          echo "  go.mod - Latest: $go_mod_latest, Current: $go_mod_current"
+          echo "  CI stable - Latest: $ci_stable_latest, Current: $ci_stable_current"
+          echo "  CI oldstable - Latest: $ci_oldstable_latest, Current: $ci_oldstable_current"
+
+          needs_update=false
+
+          if [ "$go_mod_latest" != "$go_mod_current" ]; then
+            echo "go.mod needs update"
+            needs_update=true
+          fi
+
+          if [ "$ci_stable_latest" != "$ci_stable_current" ] || [ "$ci_oldstable_latest" != "$ci_oldstable_current" ]; then
+            echo "CI versions need update"
+            needs_update=true
+          fi
+
+          if [ "$needs_update" = "false" ]; then
+            echo "All Go versions are already up to date!"
+          else
+            echo "Go version updates available"
+          fi
+
+          echo "needs_update=$needs_update" >> $GITHUB_OUTPUT
+
+      - name: Set up Go
+        if: steps.compare.outputs.needs_update == 'true'
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: ${{ steps.go_version.outputs.stable }}
+
+      - name: Update go.mod
+        if: steps.compare.outputs.needs_update == 'true'
+        run: |
+          go_mod_version="${{ steps.go_version.outputs.go_mod_version }}"
+          echo "Updating go.mod to Go $go_mod_version..."
+
+          # Update the go directive in go.mod
+          sed -i "s/^go .*/go $go_mod_version/" go.mod
+
+          # Run go mod tidy to ensure go.sum is updated
+          go mod tidy
+
+          echo "go.mod updated successfully"
+          cat go.mod
+
+      - name: Update ci.yml with new Go versions
+        if: steps.compare.outputs.needs_update == 'true'
+        run: |
+          stable="${{ steps.go_version.outputs.stable }}"
+          oldstable="${{ steps.go_version.outputs.oldstable }}"
+
+          echo "Updating .github/workflows/ci.yml with:"
+          echo "  Stable: $stable"
+          echo "  Oldstable: $oldstable"
+
+          # Update the go-version matrix in ci.yml
+          sed -i "s/go-version: \[.*\]  # Updated by go-version-update workflow/go-version: ['$stable', '$oldstable']  # Updated by go-version-update workflow/" .github/workflows/ci.yml
+
+          # Update the matrix include section for is-latest flag
+          # Find the include section and update both version entries
+          sed -i "/- go-version: '[0-9.]*'/{N;s/- go-version: '[0-9.]*'\n            is-latest: true/- go-version: '$stable'\n            is-latest: true/;}" .github/workflows/ci.yml
+          sed -i "/- go-version: '[0-9.]*'/{N;s/- go-version: '[0-9.]*'\n            is-latest: false/- go-version: '$oldstable'\n            is-latest: false/;}" .github/workflows/ci.yml
+
+          echo "ci.yml updated successfully"
+          echo "Matrix configuration:"
+          grep -A 7 "go-version:" .github/workflows/ci.yml | head -8
+
+      - name: Create Pull Request
+        if: steps.compare.outputs.needs_update == 'true'
+        uses: peter-evans/create-pull-request@3b4c3ba8e05d12a9420e4e7084c4d2646eda1964 # v7.0.6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update Go versions (stable: ${{ steps.go_version.outputs.stable }}, oldstable: ${{ steps.go_version.outputs.oldstable }})
+
+            Automated update to the latest stable Go releases.
+
+            Changes:
+            - Updated go.mod to use Go ${{ steps.go_version.outputs.go_mod_version }}
+            - Updated CI to test with Go ${{ steps.go_version.outputs.stable }} and ${{ steps.go_version.outputs.oldstable }}
+            - Ran go mod tidy to update dependencies
+
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+            Co-Authored-By: Claude <noreply@anthropic.com>
+          branch: automated/go-version-${{ steps.go_version.outputs.stable }}
+          delete-branch: true
+          title: 'chore: update Go to ${{ steps.go_version.outputs.stable }} (stable) and ${{ steps.go_version.outputs.oldstable }} (oldstable)'
+          body: |
+            ## 🔄 Automated Go Version Update
+
+            This PR updates Go to the latest stable and oldstable releases.
+
+            ### Changes
+
+            **go.mod:**
+            - **Previous:** `${{ steps.current_version.outputs.version }}`
+            - **New:** `${{ steps.go_version.outputs.go_mod_version }}`
+
+            **CI Testing Matrix:**
+            - **Stable:** `${{ steps.current_ci_versions.outputs.stable }}` → `${{ steps.go_version.outputs.stable }}`
+            - **Oldstable:** `${{ steps.current_ci_versions.outputs.oldstable }}` → `${{ steps.go_version.outputs.oldstable }}`
+
+            ### What was updated
+
+            - ✅ `go.mod` - Updated go directive to `${{ steps.go_version.outputs.go_mod_version }}`
+            - ✅ `go.sum` - Regenerated with `go mod tidy`
+            - ✅ `.github/workflows/ci.yml` - Updated test matrix to use explicit versions
+
+            ### Release Information
+
+            **Stable (${{ steps.go_version.outputs.stable }}):**
+            - **Release notes:** https://go.dev/doc/devel/release#${{ steps.go_version.outputs.stable_full }}
+            - **Download:** https://go.dev/dl/#${{ steps.go_version.outputs.stable_full }}
+
+            **Oldstable (${{ steps.go_version.outputs.oldstable }}):**
+            - **Release notes:** https://go.dev/doc/devel/release#${{ steps.go_version.outputs.oldstable_full }}
+            - **Download:** https://go.dev/dl/#${{ steps.go_version.outputs.oldstable_full }}
+
+            ### Verification
+
+            The CI workflow will automatically:
+            - ✅ Run linting with golangci-lint
+            - ✅ Run unit tests on the new Go version
+            - ✅ Run integration tests
+            - ✅ Build binaries for all platforms
+            - ✅ Run security scans
+
+            ### Manual Testing
+
+            To test locally:
+            ```bash
+            # Update your Go installation
+            go install golang.org/dl/${{ steps.go_version.outputs.full_version }}@latest
+            ${{ steps.go_version.outputs.full_version }} download
+
+            # Or update using your package manager
+            # brew upgrade go
+            # or download from https://go.dev/dl/
+
+            # Pull this branch
+            git fetch origin automated/go-version-${{ steps.go_version.outputs.version }}
+            git checkout automated/go-version-${{ steps.go_version.outputs.version }}
+
+            # Test
+            go test -v -race ./...
+            golangci-lint run
+            go build ./cmd/mikrotik-backup
+            ```
+
+            ### Merge Checklist
+
+            - [ ] CI passes on the new Go version
+            - [ ] All tests pass
+            - [ ] No new linting errors
+            - [ ] Builds successfully on all platforms
+
+            ---
+
+            🤖 This PR was automatically created by the **Update Go Version** workflow.
+
+            Triggered by: Monthly schedule (1st of every month) or manual dispatch
+          labels: |
+            dependencies
+            go
+            automated
+          assignees: |
+            ${{ github.repository_owner }}
+
+      - name: Summary
+        run: |
+          echo "## Go Version Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### go.mod" >> $GITHUB_STEP_SUMMARY
+          echo "- **Current:** ${{ steps.current_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Latest:** ${{ steps.go_version.outputs.go_mod_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### CI Testing Matrix" >> $GITHUB_STEP_SUMMARY
+          echo "- **Stable:** ${{ steps.current_ci_versions.outputs.stable }} → ${{ steps.go_version.outputs.stable }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Oldstable:** ${{ steps.current_ci_versions.outputs.oldstable }} → ${{ steps.go_version.outputs.oldstable }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Update needed:** ${{ steps.compare.outputs.needs_update }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.compare.outputs.needs_update }}" = "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Pull request created to update Go versions" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ All Go versions are already up to date!" >> $GITHUB_STEP_SUMMARY
+          fi

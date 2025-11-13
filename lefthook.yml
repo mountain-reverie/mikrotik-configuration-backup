@@ -1,0 +1,82 @@
+# Lefthook configuration - Fast Git hooks manager written in Go
+# Install: go install github.com/evilmartians/lefthook@latest && lefthook install
+# Run manually: lefthook run pre-commit (or pre-push, or commit-msg)
+# Documentation: https://github.com/evilmartians/lefthook
+#
+# Once installed, lefthook automatically runs:
+#   - pre-commit:  Before each git commit (fast checks: format, lint, quick tests)
+#   - pre-push:    Before each git push (thorough checks: build, full tests)
+#   - commit-msg:  When writing commit message (validates conventional commit format)
+
+pre-commit:
+  parallel: true
+  commands:
+    # Format Go code with gofumpt (stricter than gofmt)
+    go-fmt:
+      glob: "*.go"
+      run: gofumpt -l -w {staged_files}
+
+    # Organize imports
+    go-imports:
+      glob: "*.go"
+      run: goimports -w -local github.com/mountain-reverie/mikrotik-configuration-backup {staged_files}
+
+    # Run go mod tidy
+    go-mod-tidy:
+      run: go mod tidy
+
+    # Run go vet
+    go-vet:
+      run: go vet ./...
+
+    # Run golangci-lint
+    golangci-lint:
+      run: golangci-lint run --timeout=5m
+
+    # Security scanning with gosec (optional - skips if not installed)
+    gosec:
+      run: command -v gosec >/dev/null 2>&1 && gosec -no-fail -fmt=text ./... || echo "⚠️  gosec not installed (optional - runs in CI)"
+
+    # Run unit tests with race detector (short mode for speed)
+    go-test:
+      run: go test -race -short -timeout=30s ./...
+
+pre-push:
+  parallel: true
+  commands:
+    # Build check before push
+    go-build:
+      run: go build ./cmd/mikrotik-backup
+
+    # Run all tests including race detector (full suite, not short)
+    go-test:
+      run: go test -race -timeout=2m ./...
+
+commit-msg:
+  commands:
+    # Validate commit message format (conventional commits)
+    commit-msg-check:
+      run: |
+        commit_msg=$(cat {1})
+
+        # Skip validation for merge commits
+        if echo "$commit_msg" | grep -qE "^Merge (branch|pull request)"; then
+          exit 0
+        fi
+
+        # Check conventional commit format
+        if ! echo "$commit_msg" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|ci|perf)(\(.+\))?: .{3,}"; then
+          echo "❌ Invalid commit message format!"
+          echo ""
+          echo "Commit message must follow conventional commits format:"
+          echo "  type(scope): description"
+          echo ""
+          echo "Valid types: feat, fix, docs, style, refactor, test, chore, ci, perf"
+          echo ""
+          echo "Examples:"
+          echo "  feat: add SSH key authentication"
+          echo "  fix(backup): handle connection timeout"
+          echo "  docs: update installation instructions"
+          echo ""
+          exit 1
+        fi

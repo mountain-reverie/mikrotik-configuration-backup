@@ -1,0 +1,298 @@
+name: CI
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@0a35821d5c230e903fcfe077583637dea1b27b47 # v9
+        with:
+          version: latest
+          args: --timeout=5m
+
+  test:
+    name: Test (Go ${{ matrix.go-version }})
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.25.4", "1.24.10"] # Updated by go-version-update workflow
+        include:
+          - go-version: "1.25.4"
+            is-latest: true
+          - go-version: "1.24.10"
+            is-latest: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Install gotestsum
+        uses: jaxxstorm/action-install-gh-release@25d5e2dd555cd74f1fab9ac1e6ea117acde2c0c4 # v1.12.0
+        with:
+          repo: gotestyourself/gotestsum
+
+      - name: Fetch goteststats @main SHA-1
+        id: goteststats-main
+        run: |
+          sha1=$(curl \
+            --header "Accept: application/vnd.github+json" \
+            --silent \
+              https://api.github.com/repos/getvictor/goteststats/branches/main | \
+                jq --raw-output ".commit.sha")
+          echo "sha1=$sha1" >> "$GITHUB_OUTPUT"
+
+      - name: Cache goteststats
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        id: cache-goteststats
+        with:
+          path: ~/go/bin/goteststats
+          key: goteststats-${{ runner.os }}-sha1-${{ steps.goteststats-main.outputs.sha1 }}
+
+      - name: Install goteststats
+        if: steps.cache-goteststats.outputs.cache-hit != 'true'
+        run: |
+          go install github.com/getvictor/goteststats@latest
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Set Go toolchain
+        run: |
+          # Workaround for Go 1.25 covdata bug: https://github.com/golang/go/issues/75031
+          # Explicitly set GOTOOLCHAIN to avoid auto-download toolchain issues
+          go env -w GOTOOLCHAIN=go1.25.0+auto
+
+      - name: Run tests with gotestsum
+        run: |
+          mkdir -p test-results
+          gotestsum --junitfile test-results/junit.xml \
+            --format testname \
+            -- -v -tags=integration -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Generate test stats
+        if: always()
+        run: |
+          goteststats -input test-results/junit.xml -output test-results/stats.json || true
+
+      - name: Install gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run gosec security scan
+        run: |
+          mkdir -p security-results
+          gosec -fmt sarif -out security-results/gosec-${{ matrix.go-version }}.sarif ./... || true
+
+      - name: Upload gosec results to GitHub Security
+        uses: github/codeql-action/upload-sarif@ab2e54f42aa112ff08704159b88a57517f6f0ebb # v3
+        with:
+          sarif_file: security-results/gosec-${{ matrix.go-version }}.sarif
+          category: gosec-go-${{ matrix.go-version }}
+
+      - name: Generate coverage HTML report
+        if: matrix.is-latest
+        run: |
+          go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v4.5.0
+        with:
+          name: test-results-${{ matrix.go-version }}
+          path: test-results/
+          retention-days: 30
+
+      - name: Upload security results
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v4.5.0
+        with:
+          name: security-results-${{ matrix.go-version }}
+          path: security-results/
+          retention-days: 30
+
+      - name: Upload coverage report
+        if: matrix.is-latest
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v4.5.0
+        with:
+          name: coverage-report
+          path: |
+            coverage.out
+            coverage.html
+          retention-days: 30
+
+      - name: Generate base branch coverage (for diff)
+        if: matrix.is-latest && github.event_name == 'pull_request'
+        run: |
+          # Save current PR coverage
+          cp coverage.out pr-coverage.out
+
+          # Fetch and checkout base branch
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+
+          # Run tests on base branch (may fail if no Go code exists yet)
+          if go test -coverprofile=base-coverage.out ./... 2>/dev/null; then
+            echo "Base branch coverage generated successfully"
+          else
+            echo "Base branch has no Go code or tests failed - assuming 0% coverage"
+            echo "mode: atomic" > base-coverage.out
+          fi
+
+          # Restore PR state
+          git checkout -
+
+      - name: Install golang-cover-diff
+        if: matrix.is-latest && github.event_name == 'pull_request'
+        run: |
+          go install github.com/flipgroup/golang-cover-diff@main
+
+      - name: Generate coverage diff
+        if: matrix.is-latest && github.event_name == 'pull_request'
+        id: coverage_diff
+        run: |
+          golang-cover-diff -base base-coverage.out -new pr-coverage.out > coverage-diff.txt || true
+          if [ -f coverage-diff.txt ] && [ -s coverage-diff.txt ]; then
+            echo "has_diff=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_diff=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment PR with coverage diff
+        if: matrix.is-latest && github.event_name == 'pull_request' && steps.coverage_diff.outputs.has_diff == 'true'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const diff = fs.readFileSync('coverage-diff.txt', 'utf8');
+
+            const body = `## Coverage Diff\n\n\`\`\`diff\n${diff}\n\`\`\``;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' && comment.body.includes('Coverage Diff')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  build:
+    name: Build (${{ matrix.goos }}-${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0 # Full history for CodeQL PR diff analysis
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Initialize CodeQL
+        # Only run CodeQL on linux-amd64 to avoid redundant analysis
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        uses: github/codeql-action/init@ab2e54f42aa112ff08704159b88a57517f6f0ebb # v3
+        with:
+          languages: go
+          queries: security-and-quality
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go build -trimpath -ldflags="-s -w" \
+            -o mikrotik-backup-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} \
+            ./cmd/mikrotik-backup
+
+      - name: Perform CodeQL Analysis
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        uses: github/codeql-action/analyze@ab2e54f42aa112ff08704159b88a57517f6f0ebb # v3
+        with:
+          category: "/language:go"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v4.5.0
+        with:
+          name: binary-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: mikrotik-backup-*
+          retention-days: 7
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@40c09b7dc99638e5ddb0bfd91c1673effc064d8a # v4.8.1
