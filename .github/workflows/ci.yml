@@ -162,7 +162,10 @@ jobs:
           cp coverage.html _site/
 
           # Generate coverage badge
-          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          coverage=$(go tool cover -func=coverage.out 2>/dev/null | grep total | awk '{print $3}' | sed 's/%//')
+          if [ -z "$coverage" ]; then
+            coverage="0.0"
+          fi
           color="red"
           if (( $(echo "$coverage >= 80" | bc -l) )); then
             color="green"
@@ -198,7 +201,13 @@ jobs:
       - name: Generate GitHub Pages index
         if: matrix.is-latest && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          cat > _site/index.html << 'EOF'
+          # Get coverage percentage for embedding in HTML
+          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+
+          # Get current timestamp in ISO format
+          build_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          cat > _site/index.html << EOF
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -347,11 +356,11 @@ jobs:
               <main>
                 <div class="stats">
                   <div class="stat">
-                    <div class="stat-value" id="coverage">-</div>
+                    <div class="stat-value">${coverage}%</div>
                     <div class="stat-label">Code Coverage</div>
                   </div>
                   <div class="stat">
-                    <div class="stat-value" id="build-time">-</div>
+                    <div class="stat-value" id="build-time" data-timestamp="${build_timestamp}">-</div>
                     <div class="stat-label">Last Build</div>
                   </div>
                 </div>
@@ -367,12 +376,6 @@ jobs:
                     <h2>📖 API Documentation</h2>
                     <p>Browse the Go package documentation and API reference.</p>
                     <a href="https://pkg.go.dev/github.com/mountain-reverie/mikrotik-configuration-backup" class="btn">View on pkg.go.dev</a>
-                  </div>
-
-                  <div class="card">
-                    <h2>💻 Source Code</h2>
-                    <p>View the source code and contribute on GitHub.</p>
-                    <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup" class="btn">View on GitHub</a>
                   </div>
 
                   <div class="card">
@@ -393,21 +396,43 @@ jobs:
               // Set timestamp
               document.getElementById('timestamp').textContent = new Date().toLocaleString();
 
-              // Load coverage data
-              fetch('coverage.out')
-                .then(response => response.text())
-                .then(data => {
-                  const lines = data.split('\n');
-                  const totalLine = lines[lines.length - 2] || '';
-                  const match = totalLine.match(/(\d+\.\d+)%/);
-                  if (match) {
-                    document.getElementById('coverage').textContent = match[1] + '%';
-                  }
-                })
-                .catch(() => {});
+              // Calculate and display fuzzy build time
+              function updateBuildTime() {
+                const buildTimeElement = document.getElementById('build-time');
+                const buildTimestamp = buildTimeElement.getAttribute('data-timestamp');
+                const buildDate = new Date(buildTimestamp);
+                const now = new Date();
+                const diffMs = now - buildDate;
+                const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                const diffWeeks = Math.floor(diffDays / 7);
+                const diffMonths = Math.floor(diffDays / 30);
+                const diffYears = Math.floor(diffDays / 365);
 
-              // Set build time
-              document.getElementById('build-time').textContent = 'Just now';
+                let fuzzyTime;
+                if (diffMinutes < 1) {
+                  fuzzyTime = 'Just now';
+                } else if (diffMinutes < 60) {
+                  fuzzyTime = 'A few minutes ago';
+                } else if (diffHours < 24) {
+                  fuzzyTime = 'A few hours ago';
+                } else if (diffDays < 7) {
+                  fuzzyTime = 'A few days ago';
+                } else if (diffWeeks < 4) {
+                  fuzzyTime = 'A few weeks ago';
+                } else if (diffMonths < 12) {
+                  fuzzyTime = 'A few months ago';
+                } else {
+                  fuzzyTime = 'A few years ago';
+                }
+
+                buildTimeElement.textContent = fuzzyTime;
+              }
+
+              // Update build time initially and every minute
+              updateBuildTime();
+              setInterval(updateBuildTime, 60000);
             </script>
           </body>
           </html>
