@@ -670,11 +670,43 @@ cosign verify-blob checksums.txt \
   4. Update `.github/ACTION_SHAS.md` with version, SHA, and date
   5. Always add a version comment after the SHA for readability
 
-**Example Update Process:**
+**AI Agent SHA Verification Protocol:**
+
+Before making ANY changes to GitHub Actions in workflow files:
+
+1. **Verify EVERY SHA** - Check that each SHA actually exists in the source repository
+2. **Use official GitHub releases page** - Fetch from `https://github.com/{owner}/{repo}/releases` or `https://github.com/{owner}/{repo}/releases/tag/{version}`
+3. **Never trust existing SHAs** - Always verify, even if there's a version comment
+4. **Cross-reference tag and SHA** - Ensure the SHA matches the tag in the release
+5. **Report hallucinations** - If you find an invalid SHA, flag it immediately
+
+**Example Verification Process:**
 ```bash
-# Find the SHA for a release
+# ✅ Correct approach: Verify SHA from GitHub releases
+# 1. Check releases page: https://github.com/actions/checkout/releases/tag/v4.3.0
+# 2. Get commit SHA: 08eba0b27e820071cde6df949e0beb9ba4906955
+# 3. Verify it exists: https://github.com/actions/checkout/commit/08eba0b27e820071cde6df949e0beb9ba4906955
+# 4. Only then use it in workflows
+
+# ❌ Wrong approach: Using SHA without verification
+# This can result in hallucinated/invalid SHAs that cause workflow failures
+```
+
+**Finding the Correct SHA:**
+```bash
+# Option 1: Use git ls-remote
 git ls-remote https://github.com/actions/checkout refs/tags/v4.3.0
 
+# Option 2: Check GitHub releases page
+# Navigate to: https://github.com/{owner}/{repo}/releases/tag/{version}
+# The commit SHA is shown in the release details
+
+# Option 3: Use GitHub API
+curl -s https://api.github.com/repos/actions/checkout/git/refs/tags/v4.3.0 | jq -r '.object.sha'
+```
+
+**Update Documentation:**
+```bash
 # Update workflow files
 sed -i 's|uses: actions/checkout@v4|uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0|g' .github/workflows/*.yml
 
