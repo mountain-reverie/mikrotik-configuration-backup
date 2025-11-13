@@ -178,7 +178,7 @@ jobs:
       - name: Install golang-cover-diff
         if: matrix.is-latest && github.event_name == 'pull_request'
         run: |
-          go install github.com/taufikarifuddin/golang-cover-diff@latest
+          go install github.com/flipgroup/golang-cover-diff@main
 
       - name: Generate coverage diff
         if: matrix.is-latest && github.event_name == 'pull_request'
