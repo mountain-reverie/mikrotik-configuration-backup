@@ -1,10 +1,10 @@
 # MikroTik Configuration Backup
 
-[![CI](https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/mountain-reverie/mikrotik-configuration-backup.svg)](https://pkg.go.dev/github.com/mountain-reverie/mikrotik-configuration-backup)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mountain-reverie/mikrotik-configuration-backup)](https://goreportcard.com/report/github.com/mountain-reverie/mikrotik-configuration-backup)
 [![Coverage](https://mountain-reverie.github.io/mikrotik-configuration-backup/coverage-badge.svg)](https://mountain-reverie.github.io/mikrotik-configuration-backup/coverage.html)
+[![CI](https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml/badge.svg)](https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/mountain-reverie/mikrotik-configuration-backup)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/mountain-reverie/mikrotik-configuration-backup)](https://github.com/mountain-reverie/mikrotik-configuration-backup/releases)
 
 A CLI tool to backup MikroTik RouterOS configurations via SSH.
 

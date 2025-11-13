@@ -195,26 +195,6 @@ jobs:
           </svg>
           EOF
 
-          # Run benchmarks
-          go test -bench=. -benchmem -run=^$ ./... > _site/benchmarks.txt 2>&1 || true
-
-      - name: Install benchstat
-        if: matrix.is-latest && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          go install golang.org/x/perf/cmd/benchstat@latest
-
-      - name: Download and compare benchmarks
-        if: matrix.is-latest && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        continue-on-error: true
-        run: |
-          # Try to download previous benchmark results from GitHub Pages
-          curl -f -o previous-benchmarks.txt \
-            https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/benchmarks.txt || true
-
-          if [ -f previous-benchmarks.txt ]; then
-            benchstat previous-benchmarks.txt _site/benchmarks.txt > _site/benchmark-comparison.txt || true
-          fi
-
       - name: Generate GitHub Pages index
         if: matrix.is-latest && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
@@ -367,10 +347,6 @@ jobs:
               <main>
                 <div class="stats">
                   <div class="stat">
-                    <div class="stat-value" id="test-count">-</div>
-                    <div class="stat-label">Tests Passing</div>
-                  </div>
-                  <div class="stat">
                     <div class="stat-value" id="coverage">-</div>
                     <div class="stat-label">Code Coverage</div>
                   </div>
@@ -388,26 +364,14 @@ jobs:
                   </div>
 
                   <div class="card">
-                    <h2>⚡ Benchmarks</h2>
-                    <p>Performance benchmark results and comparisons across versions.</p>
-                    <a href="benchmarks.txt" class="btn">View Benchmarks</a>
+                    <h2>📖 API Documentation</h2>
+                    <p>Browse the Go package documentation and API reference.</p>
+                    <a href="https://pkg.go.dev/github.com/mountain-reverie/mikrotik-configuration-backup" class="btn">View on pkg.go.dev</a>
                   </div>
 
                   <div class="card">
-                    <h2>📈 Benchmark Comparison</h2>
-                    <p>Statistical comparison of current vs previous benchmark results.</p>
-                    <a href="benchmark-comparison.txt" class="btn">View Comparison</a>
-                  </div>
-
-                  <div class="card">
-                    <h2>📋 Test Results</h2>
-                    <p>JUnit XML test results for integration with CI/CD tools.</p>
-                    <a href="junit.xml" class="btn">View Test Results</a>
-                  </div>
-
-                  <div class="card">
-                    <h2>📖 Documentation</h2>
-                    <p>Read the full project documentation on GitHub.</p>
+                    <h2>💻 Source Code</h2>
+                    <p>View the source code and contribute on GitHub.</p>
                     <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup" class="btn">View on GitHub</a>
                   </div>
 
@@ -439,21 +403,6 @@ jobs:
                   if (match) {
                     document.getElementById('coverage').textContent = match[1] + '%';
                   }
-                })
-                .catch(() => {});
-
-              // Load test count from JUnit XML
-              fetch('junit.xml')
-                .then(response => response.text())
-                .then(data => {
-                  const parser = new DOMParser();
-                  const xml = parser.parseFromString(data, 'text/xml');
-                  const testsuites = xml.getElementsByTagName('testsuite');
-                  let total = 0;
-                  for (let suite of testsuites) {
-                    total += parseInt(suite.getAttribute('tests') || 0);
-                  }
-                  document.getElementById('test-count').textContent = total;
                 })
                 .catch(() => {});
 
