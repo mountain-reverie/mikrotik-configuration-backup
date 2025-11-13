@@ -199,7 +199,10 @@ jobs:
         if: matrix.is-latest && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           # Get coverage percentage for embedding in HTML
-          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          coverage=$(go tool cover -func=coverage.out 2>/dev/null | grep total | awk '{print $3}' | sed 's/%//')
+          if [ -z "$coverage" ]; then
+            coverage="0.0"
+          fi
 
           # Get current timestamp in ISO format
           build_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
