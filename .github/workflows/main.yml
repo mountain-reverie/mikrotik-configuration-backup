@@ -22,10 +22,6 @@ jobs:
     name: Run CI
     uses: ./.github/workflows/ci.yml
     secrets: inherit
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
 
   tag:
     name: Auto-tag Release
@@ -105,7 +101,3 @@ jobs:
     needs: ci
     uses: ./.github/workflows/pages.yml
     secrets: inherit
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
