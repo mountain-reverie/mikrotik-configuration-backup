@@ -21,11 +21,6 @@ jobs:
     name: Run CI
     uses: ./.github/workflows/ci.yml
     secrets: inherit
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-      pull-requests: write
 
   dependabot-automerge:
     name: Dependabot Auto-merge
