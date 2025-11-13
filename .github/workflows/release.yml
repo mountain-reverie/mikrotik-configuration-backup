@@ -36,7 +36,7 @@ jobs:
         uses: anchore/sbom-action/download-syft@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@90539bf0bb41e71e46bfadf2a76e6d3447b1b2ec # v6.1.0
+        uses: goreleaser/goreleaser-action@9ed2f89a662bf1735a48bc8557fd212fa902bebf # v6.1.0
         with:
           distribution: goreleaser
           version: latest
