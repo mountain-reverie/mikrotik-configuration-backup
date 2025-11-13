@@ -339,7 +339,7 @@ jobs:
                 <p class="subtitle">A robust CLI tool to backup MikroTik RouterOS configurations</p>
                 <div class="badges">
                   <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup/actions" class="badge">
-                    <img src="https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml/badge.svg" alt="CI">
+                    <img src="https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/main.yml/badge.svg" alt="CI">
                   </a>
                   <a href="https://goreportcard.com/report/github.com/mountain-reverie/mikrotik-configuration-backup" class="badge">
                     <img src="https://goreportcard.com/badge/github.com/mountain-reverie/mikrotik-configuration-backup" alt="Go Report Card">
