@@ -151,6 +151,274 @@ jobs:
             coverage.html
           retention-days: 30
 
+      - name: Build GitHub Pages content
+        if: matrix.is-latest && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p _site
+
+          # Copy test results and coverage
+          cp test-results/junit.xml _site/
+          cp coverage.out _site/
+          cp coverage.html _site/
+
+          # Generate coverage badge
+          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          color="red"
+          if (( $(echo "$coverage >= 80" | bc -l) )); then
+            color="green"
+          elif (( $(echo "$coverage >= 60" | bc -l) )); then
+            color="yellow"
+          elif (( $(echo "$coverage >= 40" | bc -l) )); then
+            color="orange"
+          fi
+
+          cat > _site/coverage-badge.svg << EOF
+          <svg xmlns="http://www.w3.org/2000/svg" width="120" height="20">
+            <linearGradient id="b" x2="0" y2="100%">
+              <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+              <stop offset="1" stop-opacity=".1"/>
+            </linearGradient>
+            <mask id="a">
+              <rect width="120" height="20" rx="3" fill="#fff"/>
+            </mask>
+            <g mask="url(#a)">
+              <path fill="#555" d="M0 0h63v20H0z"/>
+              <path fill="$color" d="M63 0h57v20H63z"/>
+              <path fill="url(#b)" d="M0 0h120v20H0z"/>
+            </g>
+            <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+              <text x="31.5" y="15" fill="#010101" fill-opacity=".3">coverage</text>
+              <text x="31.5" y="14">coverage</text>
+              <text x="90.5" y="15" fill="#010101" fill-opacity=".3">${coverage}%</text>
+              <text x="90.5" y="14">${coverage}%</text>
+            </g>
+          </svg>
+          EOF
+
+      - name: Generate GitHub Pages index
+        if: matrix.is-latest && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>MikroTik Configuration Backup - Documentation</title>
+            <style>
+              :root {
+                --primary-color: #0366d6;
+                --bg-color: #ffffff;
+                --text-color: #24292e;
+                --border-color: #e1e4e8;
+                --code-bg: #f6f8fa;
+              }
+              @media (prefers-color-scheme: dark) {
+                :root {
+                  --bg-color: #0d1117;
+                  --text-color: #c9d1d9;
+                  --border-color: #30363d;
+                  --code-bg: #161b22;
+                }
+              }
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                line-height: 1.6;
+                color: var(--text-color);
+                background-color: var(--bg-color);
+                padding: 2rem;
+              }
+              .container {
+                max-width: 1200px;
+                margin: 0 auto;
+              }
+              header {
+                text-align: center;
+                padding: 2rem 0;
+                border-bottom: 1px solid var(--border-color);
+                margin-bottom: 2rem;
+              }
+              h1 {
+                font-size: 2.5rem;
+                margin-bottom: 0.5rem;
+              }
+              .subtitle {
+                color: #586069;
+                font-size: 1.2rem;
+              }
+              .badge {
+                display: inline-block;
+                margin: 0.5rem 0.25rem;
+              }
+              .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 2rem;
+                margin: 2rem 0;
+              }
+              .card {
+                background: var(--code-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                padding: 1.5rem;
+                transition: transform 0.2s;
+              }
+              .card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+              }
+              .card h2 {
+                margin-bottom: 1rem;
+                color: var(--primary-color);
+              }
+              .card p {
+                margin-bottom: 1rem;
+                color: #586069;
+              }
+              .btn {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                background: var(--primary-color);
+                color: white;
+                text-decoration: none;
+                border-radius: 6px;
+                transition: background 0.2s;
+              }
+              .btn:hover {
+                background: #0256c7;
+              }
+              footer {
+                text-align: center;
+                padding: 2rem 0;
+                border-top: 1px solid var(--border-color);
+                margin-top: 2rem;
+                color: #586069;
+              }
+              .stats {
+                display: flex;
+                justify-content: space-around;
+                flex-wrap: wrap;
+                margin: 2rem 0;
+                padding: 1rem;
+                background: var(--code-bg);
+                border-radius: 6px;
+              }
+              .stat {
+                text-align: center;
+                padding: 1rem;
+              }
+              .stat-value {
+                font-size: 2rem;
+                font-weight: bold;
+                color: var(--primary-color);
+              }
+              .stat-label {
+                color: #586069;
+                margin-top: 0.5rem;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <header>
+                <h1>MikroTik Configuration Backup</h1>
+                <p class="subtitle">A robust CLI tool to backup MikroTik RouterOS configurations</p>
+                <div class="badges">
+                  <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup/actions" class="badge">
+                    <img src="https://github.com/mountain-reverie/mikrotik-configuration-backup/actions/workflows/ci.yml/badge.svg" alt="CI">
+                  </a>
+                  <a href="https://goreportcard.com/report/github.com/mountain-reverie/mikrotik-configuration-backup" class="badge">
+                    <img src="https://goreportcard.com/badge/github.com/mountain-reverie/mikrotik-configuration-backup" alt="Go Report Card">
+                  </a>
+                  <a href="coverage.html" class="badge">
+                    <img src="coverage-badge.svg" alt="Coverage">
+                  </a>
+                  <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup/releases" class="badge">
+                    <img src="https://img.shields.io/github/v/release/mountain-reverie/mikrotik-configuration-backup" alt="Release">
+                  </a>
+                </div>
+              </header>
+
+              <main>
+                <div class="stats">
+                  <div class="stat">
+                    <div class="stat-value" id="coverage">-</div>
+                    <div class="stat-label">Code Coverage</div>
+                  </div>
+                  <div class="stat">
+                    <div class="stat-value" id="build-time">-</div>
+                    <div class="stat-label">Last Build</div>
+                  </div>
+                </div>
+
+                <div class="grid">
+                  <div class="card">
+                    <h2>📊 Test Coverage</h2>
+                    <p>View detailed code coverage report showing which parts of the codebase are tested.</p>
+                    <a href="coverage.html" class="btn">View Coverage Report</a>
+                  </div>
+
+                  <div class="card">
+                    <h2>📖 API Documentation</h2>
+                    <p>Browse the Go package documentation and API reference.</p>
+                    <a href="https://pkg.go.dev/github.com/mountain-reverie/mikrotik-configuration-backup" class="btn">View on pkg.go.dev</a>
+                  </div>
+
+                  <div class="card">
+                    <h2>💻 Source Code</h2>
+                    <p>View the source code and contribute on GitHub.</p>
+                    <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup" class="btn">View on GitHub</a>
+                  </div>
+
+                  <div class="card">
+                    <h2>🚀 Releases</h2>
+                    <p>Download the latest release binaries for your platform.</p>
+                    <a href="https://github.com/mountain-reverie/mikrotik-configuration-backup/releases" class="btn">View Releases</a>
+                  </div>
+                </div>
+              </main>
+
+              <footer>
+                <p>Generated by GitHub Actions • Last updated: <span id="timestamp"></span></p>
+                <p>Made with ❤️ for the MikroTik community</p>
+              </footer>
+            </div>
+
+            <script>
+              // Set timestamp
+              document.getElementById('timestamp').textContent = new Date().toLocaleString();
+
+              // Load coverage data
+              fetch('coverage.out')
+                .then(response => response.text())
+                .then(data => {
+                  const lines = data.split('\n');
+                  const totalLine = lines[lines.length - 2] || '';
+                  const match = totalLine.match(/(\d+\.\d+)%/);
+                  if (match) {
+                    document.getElementById('coverage').textContent = match[1] + '%';
+                  }
+                })
+                .catch(() => {});
+
+              // Set build time
+              document.getElementById('build-time').textContent = 'Just now';
+            </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload GitHub Pages artifact
+        if: matrix.is-latest && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: '_site'
+
       - name: Generate base branch coverage (for diff)
         if: matrix.is-latest && github.event_name == 'pull_request'
         run: |
