@@ -49,6 +49,33 @@ checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
 
+# Docker images (using v2 format for multi-arch builds)
+dockers_v2:
+  - ids:
+      - mikrotik-backup
+    images:
+      - "ghcr.io/mountain-reverie/mikrotik-backup"
+    tags:
+      - "{{ .Tag }}"
+      - "v{{ .Major }}"
+      - "v{{ .Major }}.{{ .Minor }}"
+      - "latest"
+    dockerfile: packages/Dockerfile
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    labels:
+      "org.opencontainers.image.created": "{{ .Date }}"
+      "org.opencontainers.image.title": "{{ .ProjectName }}"
+      "org.opencontainers.image.revision": "{{ .FullCommit }}"
+      "org.opencontainers.image.version": "{{ .Version }}"
+      "org.opencontainers.image.source": "https://github.com/mountain-reverie/mikrotik-configuration-backup"
+      "org.opencontainers.image.licenses": "MIT"
+      "org.opencontainers.image.description": "Automated backup tool for MikroTik router configurations"
+    extra_files:
+      - LICENSE
+      - README.md
+
 # Sign checksums with cosign using keyless signing
 signs:
   - cmd: cosign
