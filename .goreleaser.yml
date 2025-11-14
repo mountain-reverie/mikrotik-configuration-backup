@@ -16,19 +16,12 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - darwin
-      - windows
     goarch:
       - amd64
       - arm64
       - arm
     goarm:
       - "7"
-    ignore:
-      - goos: windows
-        goarch: arm64
-      - goos: windows
-        goarch: arm
     ldflags:
       - -s -w
     flags:
@@ -47,10 +40,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    format_overrides:
-      - goos: windows
-        formats:
-          - zip
     files:
       - LICENSE
       - README.md
@@ -131,12 +120,7 @@ release:
     ## Installation
 
     ### Binary Downloads
-    Download the appropriate binary for your system from the assets below.
-
-    ### Homebrew (macOS/Linux)
-    ```bash
-    brew install mountain-reverie/tap/mikrotik-backup
-    ```
+    Download the appropriate Linux binary for your system from the assets below.
 
     ### Go Install
     ```bash
