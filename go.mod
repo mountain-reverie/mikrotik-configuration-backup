@@ -1,6 +1,6 @@
 module github.com/mountain-reverie/mikrotik-configuration-backup
 
-go 1.25.3
+go 1.24.10
 
 require github.com/urfave/cli/v2 v2.27.7
 
